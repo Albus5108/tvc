@@ -1,0 +1,35 @@
+Package: tvc
+Title: Vanessa Carlton Triad
+Version: 1.5.0
+Authors@R: 
+    person("Arthur", "Petit", , "arthur.petit5108@gmail.com", role = c("aut", "cre"))
+Description: R functions to analyse Vanessa Carlton Triads through music
+    history.
+License: MIT + file LICENSE
+Imports: 
+    attempt,
+    cli,
+    config,
+    dplyr,
+    ggnetwork,
+    ggplot2,
+    glue,
+    googlesheets4,
+    grDevices,
+    httr,
+    igraph,
+    magrittr,
+    purrr,
+    spotifyr,
+    tibble,
+    tidyr
+Suggests: 
+    knitr,
+    rmarkdown,
+    testthat
+VignetteBuilder: 
+    knitr
+Config/fusen/version: 0.7.2
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2

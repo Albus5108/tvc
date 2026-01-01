@@ -1,0 +1,11 @@
+^dev$
+^LICENSE\.md$
+^README\.Rmd$
+^CODE_OF_CONDUCT\.md$
+^tvc\.Rproj$
+^\.Rproj\.user$
+^config\.yml$
+^inst/config\.yml$
+^service-account\.json$
+^\.github$
+^\.httr-oauth$
