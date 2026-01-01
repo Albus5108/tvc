@@ -1,0 +1,158 @@
+---
+title: "flat_config.Rmd empty"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r development, include=FALSE}
+library(testthat)
+```
+
+```{r development-load}
+# Load already included functions if relevant
+pkgload::load_all(export_all = FALSE)
+```
+
+# config
+
+```{r development-config}
+# Prepare the code of your function here
+```
+
+```{r function-config}
+#' Get Credentials for database common Data Hub
+#'
+#' Internal function used in \code{\link{con_cdh_api_edit}} and \code{\link{con_cdh_api_read}}
+#' @param env database name according to the config.yml file. Either "bruits_noprod" or "bruits_prod".
+#' @param template a boolean specifying if \code{get_config}
+#' should look for a config.yml file or a default config-template.yml file.
+#'
+#' @return a list with credentials that allows to access a database
+#' @importFrom attempt stop_if_not warn_if stop_if
+#' @importFrom config get
+#' @importFrom glue glue
+#' @examples
+#' \dontrun{
+#' keysAPI <- get_config("spotify")
+#' }
+# Suggested : @importFrom config get
+get_config <- function(env = "spotify", template = FALSE) {
+  if (template) {
+    file <- "config-template.yml"
+  } else {
+    file <- "config.yml"
+  }
+  configFiles <- c(
+    file,
+    file.path("./inst", file),
+    system.file(file, package = "xAcou"),
+    file.path("../inst", file), # for vignettes
+    file.path("../../inst", file), # for tests
+    ## for tests inside RMD Check and test coverage
+    file.path(
+      "D:", "02-Pr_MUSIQUE",
+      "tvc", "inst", file
+    )
+  )
+  configFilesExist <- file.exists(configFiles)
+  attempt::stop_if_not(any(configFilesExist),
+    msg = "No config.yml found. Use `set_cdh_config()`"
+  )
+  ## Test available config files, one after another
+  ## until keys are not NULL
+  keysAPI <- NULL
+  i <- 0
+  configFiles <- configFiles[configFilesExist]
+  while (is.null(keysAPI) & i < length(configFiles)) {
+    i <- i + 1L
+    configFile <- configFiles[i]
+    keysAPI <- config::get(value = env, file = configFile)
+    attempt::warn_if(is.null(keysAPI),
+      msg = glue::glue("no entry {env} found in {configFile}")
+    )
+    ## Test config format
+    attempt::stop_if(!is.null(keysAPI) && is.null(keysAPI[["client_secret"]]),
+      msg = glue::glue(
+        configFile, " is outdated. ",
+        "Use `set_cdh_config(keysProd = 'xxx', keysPreProd = 'yyy')`"
+      )
+    )
+  }
+  return(keysAPI)
+}
+
+```
+
+```{r examples-config}
+keysAPI <- tvc:::get_config("spotify")
+```
+
+```{r tests-config}
+test_that("config works", {
+  expect_true(inherits(get_config, "function"))
+  expect_gte(length(get_config(env = "spotify")), expected = 4L)
+})
+```
+
+# get_playlist_id
+    
+```{r development-get_playlist_id}
+# You can prepare the code of the get_playlist_id() function here
+```
+  
+```{r function-get_playlist_id}
+#' Get Playlist id
+#' 
+#' Get the spotify playlist id based on the name of the triad
+#' 
+#' @param triad a character string (exemple : "1 7")
+#' @param name a character string, it can be partial (exemple : "Carlton"). 
+#'
+#' @return \code{get_playlist_id} returns a Spotify playlist id
+#' 
+#' @export
+get_playlist_id <- function(triad = NULL, name = NULL){
+  keysAPI <- get_config(env = "spotify")
+  tabTriads <- keysAPI[["playlists"]] %>%
+    purrr::transpose() %>%
+    tibble::as_tibble() %>%
+    tidyr::unnest(cols = c(triad, name, playlist)) %>% 
+    dplyr::rename(triad_identifier = triad,
+                  triad_name = name)
+  if(!is.null(triad)) {
+    out <- tabTriads %>% 
+      dplyr::filter(triad_identifier == triad) %>% 
+      dplyr::pull(playlist)
+  } else {
+    if(!is.null(name)) {
+      out <- tabTriads %>% 
+        dplyr::filter(grepl(name, x = triad_name)) %>%
+        dplyr::arrange(nchar(triad_name)) %>% 
+        dplyr::slice_head(n = 1L) %>% 
+        dplyr::pull(playlist)
+    }
+  }
+  return(out)
+}
+```
+  
+```{r example-get_playlist_id}
+get_playlist_id(triad = "1 7")
+get_playlist_id(name = "Vanessa Carlton")
+```
+  
+```{r tests-get_playlist_id}
+test_that("get_playlist_id works", {
+  expect_true(inherits(get_playlist_id, "function")) 
+  expect_equal(object = get_playlist_id(name = "Vanessa Carlton"),
+               expected = get_playlist_id(triad = "1 7"))
+})
+```
+
+```{r development-inflate, eval=FALSE}
+# Run but keep eval=FALSE to avoid infinite loop
+# Execute in the console directly
+fusen::inflate(flat_file = "dev/flat_config.Rmd", vignette_name = "Manage config")
+```
+

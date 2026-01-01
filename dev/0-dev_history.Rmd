@@ -1,0 +1,149 @@
+---
+title: "Development actions history"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+All commands that you use to use when developing packages...
+
+# First time just after creating the project
+
+- Fill the following chunk to create the DESCRIPTION of your package
+
+```{r description}
+# Describe your package
+fusen::fill_description(
+  pkg = here::here(),
+  fields = list(
+    Title = "Vanessa Carlton Triad",
+    Description = "R functions to analyse Vanessa Carlton Triads through music history.",
+    `Authors@R` = c(
+      person("Arthur", "Petit", email = "arthur.petit5108@gmail.com", role = c("aut", "cre"))
+    )
+  )
+)
+# Define License with use_*_license()
+usethis::use_mit_license("Arthur Petit")
+```
+
+# All-in-one function to deploy publicly on GitHub
+
+Either use this GitHub all-in-one function or choose the steps one-by-one in the following sections.
+See `vignette("share-on-a-github-website", package = "fusen")` for more information.
+
+```{r, eval=FALSE}
+# _All-in-one share of your package and its documentation on GitHub
+fusen::init_share_on_github()
+```
+
+
+# Start using git
+
+```{r, eval=FALSE}
+usethis::use_git()
+# Deal with classical files to ignore
+usethis::git_vaccinate()
+# Use main for primary branch
+usethis::git_default_branch_rename()
+```
+
+# Set extra sources of documentation
+
+```{r, eval=FALSE}
+# Install a first time
+remotes::install_local()
+# README
+usethis::use_readme_rmd()
+# Code of Conduct
+usethis::use_code_of_conduct("arthur.petit5108@gmail.com")
+# NEWS
+usethis::use_news_md()
+```
+
+**From now, you will need to "inflate" your package at least once to be able to use the following commands. Let's go to your flat template, and come back here later if/when needed.**
+
+
+# Package development tools
+## Use once
+
+```{r, eval=FALSE}
+# Pipe
+usethis::use_pipe()
+
+# package-level documentation
+usethis::use_package_doc()
+
+# GitHub
+# Add your credentials for GitHub
+usethis::create_github_token()
+gitcreds::gitcreds_set()
+
+# _Or one step at a time
+# Send your project to a new GitHub project (included in `init_share_on_github()`)
+usethis::use_github()
+
+# Set Continuous Integration
+# _GitHub (included in `init_share_on_github()`)
+usethis::use_github_action_check_standard()
+usethis::use_github_action("pkgdown")
+usethis::use_github_action("test-coverage")
+# _GitLab
+gitlabr::use_gitlab_ci(type = "check-coverage-pkgdown")
+```
+
+## Use everytime needed
+
+```{r, eval=FALSE}
+# Simulate package installation
+pkgload::load_all()
+
+# Generate documentation and deal with dependencies
+attachment::att_amend_desc()
+
+## Update README
+devtools::build_readme()
+
+# Check the package
+devtools::check()
+
+# Add a new flat template
+fusen::add_flat_template(template = "add", flat_name = "config")
+fusen::add_flat_template(template = "add", flat_name = "auth_spotify")
+fusen::add_flat_template(template = "add", flat_name = "parse_triade")
+fusen::add_flat_template(template = "add", flat_name = "insert_line_breaks_adaptive")
+fusen::add_flat_template(template = "add", flat_name = "plot_tvc_histogram")
+fusen::add_flat_template(template = "add", flat_name = "plot_tvc_network")
+fusen::add_flat_template(template = "add", flat_name = "plot_tvc_network_artist")
+fusen::add_flat_template(template = "add", flat_name = "write_missing_triade")
+fusen::add_flat_template(template = "add", flat_name = "read_sheet_triad")
+fusen::add_flat_template(template = "add", flat_name = "scale_palette_triad")
+
+# perspective : article md, fonction wrapper read_all_triad, carte du monde de la triade a partir de nationalite des artistes ? fonction set_config, ajouter globals.R, ajouer un badge au README
+
+# Inflate all flat files at once
+fusen::inflate_all()
+
+# Replace non-ASCII character
+cat(stringi::stri_escape_unicode("e"))
+
+# Package structure (add this in a dev/Readme.md file)
+fusen::draw_package_structure()
+```
+
+# Share the package
+
+```{r, eval=FALSE}
+# set and try pkgdown documentation website locally
+usethis::use_pkgdown()
+pkgdown::build_site()
+
+# build the tar.gz with vignettes to share with others
+devtools::build(vignettes = TRUE)
+
+# Share your package and its documentation on GitHub
+# usethis::create_github_token()
+# gitcreds::gitcreds_set()
+fusen::init_share_on_github()
+```
+

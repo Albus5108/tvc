@@ -1,0 +1,176 @@
+---
+title: "flat_scale_palette_triad.Rmd empty"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r development, include=FALSE}
+library(testthat)
+```
+
+```{r development-load}
+# Load already included functions if relevant
+pkgload::load_all(export_all = FALSE)
+```
+
+# tvc_corp_palette
+    
+```{r development-tvc_corp_palette}
+# You can prepare the code of the tvc_corp_palette() function here
+```
+  
+```{r function-tvc_corp_palette}
+#' Title
+#' 
+#' Description
+#' 
+#' @return \code{tvc_corp_palette} returns a corporate palette based on Vanessa Carlton debut album "Be Not Nobody".
+#' 
+#' @noRd
+tvc_corp_palette <- function(palette = "main", ...) {
+
+  tvc_corp_palettes <- list(
+    `main` = c("#EB5646",  # Rouge vif
+               "#FCF1DD",  # Beige clair
+               "black",  # Beige clair
+               "#D9A066",  # Ocre dore, pour rechauffer et varier
+               "#A3472A",  # Terre cuite foncee, plus rustique
+               "#7B2E2E"),  # Bordeaux profond, pour l’ancrage visuel,
+    `gradient` = c("#FCF1DD",  # Beige clair
+                   "#D9A066",  # Ocre dore, pour rechauffer et varier
+                   "#A3472A",  # Terre cuite foncee, plus rustique
+                   "#EB5646")  # Rouge vif
+  )
+
+  tvc_corp_palettes[[palette]]
+}
+```
+  
+```{r example-tvc_corp_palette}
+tvc:::tvc_corp_palette()
+```
+  
+```{r tests-tvc_corp_palette}
+test_that("tvc_corp_palette works", {
+  expect_true(inherits(tvc_corp_palette, "function")) 
+})
+```
+
+# palette_gen_c
+    
+```{r development-palette_gen_c}
+# You can prepare the code of the palette_gen_c() function here
+scales::show_col(tvc_corp_palette("main"), cex_label = 2)
+```
+  
+```{r function-palette_gen_c}
+#' Title
+#' 
+#' Description
+#' 
+#' @return a palette continuous
+#' 
+#' @noRd
+palette_gen_c <- function(palette = "gradient", direction = 1, ...) {
+
+  pal <- tvc_corp_palette(palette)
+
+  pal <- if (direction >= 0) pal else rev(pal)
+
+  grDevices::colorRampPalette(pal, ...)
+
+}
+```
+  
+```{r example-palette_gen_c}
+tvc:::palette_gen_c()
+```
+  
+```{r tests-palette_gen_c}
+test_that("palette_gen_c works", {
+  expect_true(inherits(palette_gen_c, "function")) 
+})
+```
+
+# scale_fill_tvc_c
+
+```{r development-scale_fill_tvc_c}
+# Prepare the code of your function here
+```
+
+```{r function-scale_fill_tvc_c}
+#' scale_fill_tvc_c Title
+#'
+#' @param palette either gradient or "main" or ?
+#' @param direction 1 for onward or -1 for downward
+#' @param ... other params ?
+#'
+#' @return \code{scale_fill_tvc_c} returns a corporate palette
+#' @export
+#' @importFrom ggplot2 scale_fill_gradientn
+#'
+#' @examples
+scale_fill_tvc_c  <- function(palette = "gradient", direction = 1, ...) {
+
+  pal <- palette_gen_c(palette = palette, direction = direction)
+
+  ggplot2::scale_fill_gradientn(colors = pal(256), ...)
+
+}
+```
+
+```{r examples-scale_fill_tvc_c}
+scale_fill_tvc_c()
+```
+
+```{r tests-scale_fill_tvc_c}
+test_that("scale_fill_tvc_c works", {
+  expect_true(inherits(scale_fill_tvc_c, "function"))
+})
+```
+
+# scale_colour_tvc_c
+    
+```{r development-scale_colour_tvc_c}
+# You can prepare the code of the scale_colour_tvc_c() function here
+```
+  
+```{r function-scale_colour_tvc_c}
+#' Title
+#' 
+#' Description
+#' 
+#' @param palette either gradient or "main" or ?
+#' @param direction 1 for onward or -1 for downward
+#' @param ... other params ?
+#'
+#' @return \code{scale_colour_tvc_c} returns a corporate palette
+#' 
+#' @export
+#' @importFrom ggplot2 scale_colour_gradientn
+scale_colour_tvc_c <- function(palette = "gradient", direction = 1, ...) {
+
+  pal <- palette_gen_c(palette = palette, direction = direction)
+
+  ggplot2::scale_colour_gradientn(colors = pal(256), ...)
+
+}
+```
+  
+```{r example-scale_colour_tvc_c}
+scale_colour_tvc_c()
+```
+  
+```{r tests-scale_colour_tvc_c}
+test_that("scale_colour_tvc_c works", {
+  expect_true(inherits(scale_colour_tvc_c, "function")) 
+})
+```
+
+```{r development-inflate, eval=FALSE}
+# Run but keep eval=FALSE to avoid infinite loop
+# Execute in the console directly
+fusen::inflate(flat_file = "dev/flat_scale_palette_triad.Rmd", vignette_name = "Custom Colour Palette")
+```
+

@@ -1,0 +1,120 @@
+---
+title: "flat_insert_line_breaks_adaptive.Rmd empty"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r development, include=FALSE}
+library(testthat)
+```
+
+```{r development-load}
+# Load already included functions if relevant
+pkgload::load_all(export_all = FALSE)
+```
+
+# insert_line_breaks_adaptive
+
+```{r development-insert_line_breaks_adaptive}
+# Prepare the code of your function here
+```
+
+```{r function-insert_line_breaks_adaptive}
+#' Insert line breaks
+#' 
+#' @param texts a character vector
+#' @param max_lines maximum number of lines expected for the longer character strings
+#'
+#' @return \code{insert_line_breaks_adaptive} returns \code{texts} with a proper amount of line breaks
+#' @export
+#'
+#' @examples
+insert_line_breaks_adaptive <- function(texts, max_lines = 3L) {
+  # Cas vide
+  if (length(texts) == 0) return(character(0))
+
+  # Cas NA
+  if (all(is.na(texts))) return(as.character(NA))
+
+  # Separer les mots, gerer les NA individuellement
+  split_words <- lapply(texts, function(txt) {
+    if (is.na(txt)) return(NA)
+    strsplit(txt, " ")[[1]]
+  })
+
+  # Calculer les longueurs totales (sans NA)
+  total_chars <- sapply(split_words, function(words) {
+    if (is.na(words[1])) return(NA)
+    sum(nchar(words))
+  })
+
+  # Determiner la longueur cible par ligne (ignorer les NA)
+  max_total_chars <- max(total_chars, na.rm = TRUE)
+  target_line_length <- ceiling(max_total_chars / max_lines)
+
+  # Fonction d'insertion des sauts de ligne
+  insert_breaks <- function(words, target_line_length) {
+    if (is.na(words[1])) return(NA)
+    if (length(words) < 2) return(paste(words, collapse = " "))
+
+    total_chars <- sum(nchar(words))
+    estimated_lines <- ceiling(total_chars / target_line_length)
+    num_breaks <- min(estimated_lines - 1, 2)
+
+    if (num_breaks == 0) return(paste(words, collapse = " "))
+
+    avg_chars_per_segment <- total_chars / (num_breaks + 1)
+    break_positions <- c()
+    char_count <- 0
+    current_line <- 1
+
+    for (i in seq_along(words)[-length(words)]) {
+      char_count <- char_count + nchar(words[i])
+      if (length(break_positions) < num_breaks &&
+          char_count >= current_line * avg_chars_per_segment) {
+        break_positions <- c(break_positions, i)
+        current_line <- current_line + 1
+      }
+    }
+
+    for (idx in rev(break_positions)) {
+      words[idx] <- paste0(words[idx], "\n")
+    }
+
+    paste(words, collapse = " ")
+  }
+
+  sapply(split_words, insert_breaks, target_line_length = target_line_length, USE.NAMES = FALSE)
+}
+```
+
+```{r examples-insert_line_breaks_adaptive}
+texts <- c("Bluebird",
+           "Blue Jeans",
+           "Blue Velvet",
+           "Blue Moon (Remaster)",
+           "Blue Banisters")
+insert_line_breaks_adaptive(texts = texts, max_lines = 3L)
+```
+
+```{r tests-insert_line_breaks_adaptive}
+test_that("insert_line_breaks_adaptive works", {
+  expect_true(inherits(insert_line_breaks_adaptive, "function"))
+  texts <- c("Bluebird", "Blue Jeans", "Blue Velvet", "Blue Moon (Remaster)", "Blue Banisters")
+  expect_equal(
+    object = insert_line_breaks_adaptive(texts = texts, max_lines = 3L),
+    expected = c("Bluebird", "Blue Jeans", "Blue Velvet",
+                 "Blue Moon\n (Remaster)", "Blue Banisters")
+    )
+  
+})
+```
+
+
+```{r development-inflate, eval=FALSE}
+# Run but keep eval=FALSE to avoid infinite loop
+# Execute in the console directly
+fusen::inflate(flat_file = "dev/flat_insert_line_breaks_adaptive.Rmd", vignette_name = "Insert Line Breaks")
+```
+

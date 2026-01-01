@@ -1,0 +1,79 @@
+---
+title: "flat_plot_tvc_histogram.Rmd empty"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r development, include=FALSE}
+library(testthat)
+```
+
+```{r development-load}
+# Load already included functions if relevant
+pkgload::load_all(export_all = FALSE)
+```
+
+# plot_tvc_histogram
+
+```{r development-plot_tvc_histogram}
+# Prepare the code of your function here
+```
+
+```{r function-plot_tvc_histogram}
+#' Plot Occurences Histogram
+#'
+#' @param songs a tibble with at least a column `Album_Year`, `Song` and `ISRC`.
+#'
+#' @return \code{plot_tvc_histogram} returns a plot
+#' @export
+#'
+#' @importFrom ggplot2 ggplot aes geom_histogram theme_bw labs
+#' @examples
+plot_tvc_histogram <- function(songs) {
+  songs %>% 
+    ## Remove classical music
+    dplyr::group_by(ISRC) %>% 
+    dplyr::filter(!any(purrr::map_lgl(.x = genres, .f = ~ "classical" %in% .x))) %>% 
+    dplyr::ungroup() %>% 
+    ## Keep one element per SOng, ISRC
+    dplyr::distinct(Song, ISRC, Album_Year, .keep_all = TRUE) %>% 
+    ggplot2::ggplot() +
+    ggplot2::aes(Album_Year) +
+    ggplot2::geom_histogram(binwidth = 1) +
+    ggplot2::annotate(geom = "label", x = c(1986, 2025), y = 5, label = c("1986", "2025")) +
+    ggplot2::theme_bw() +
+    ggplot2::labs(x = "Album Year",
+                  y = "Number of Songs",
+                  title = "Occurences of VCT through History")
+}
+```
+
+```{r examples-plot_tvc_histogram}
+songs <- tibble::tibble(Song = paste("Love Me", 1:30L, "Times"),
+                        ISRC = sample(c(letters, LETTERS), size = 30L, replace = FALSE),
+                        genres = purrr::map(1:30L,
+                                            .f = ~ sample(x = c("rock", "metal",
+                                                                "classical", "pop",
+                                                                "yacht rock"),
+                                                          size = 2)),
+                        Album_Year = round(rnorm(n = 30L,
+                                                 mean = 1986,
+                                                 sd = 7)))
+songs %>% 
+  plot_tvc_histogram()
+```
+
+```{r tests-plot_tvc_histogram}
+test_that("plot_tvc_histogram works", {
+  expect_true(inherits(plot_tvc_histogram, "function"))
+})
+```
+
+
+```{r development-inflate, eval=FALSE}
+# Run but keep eval=FALSE to avoid infinite loop
+# Execute in the console directly
+fusen::inflate(flat_file = "dev/flat_plot_tvc_histogram.Rmd", vignette_name = "plot_tvc_histogram")
+```
+

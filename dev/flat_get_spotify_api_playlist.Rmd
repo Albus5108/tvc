@@ -1,0 +1,212 @@
+---
+title: "flat_get_spotify_api_playlist.Rmd empty"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r development, include=FALSE}
+library(testthat)
+library(tvc)
+library(spotifyr)
+```
+
+```{r development-load}
+# Load already included functions if relevant
+pkgload::load_all(export_all = FALSE)
+```
+
+# auth_spotify
+
+```{r development-auth_spotify}
+# Prepare the code of your function here
+```
+
+```{r function-auth_spotify}
+#' Authentifie l’accès Spotify
+#' @param client_id Optionnel (sinon lu depuis SPOTIFY_CLIENT_ID)
+#' @param client_secret Optionnel (sinon lu depuis SPOTIFY_CLIENT_SECRET)
+#' @return \code{auth_spotify} returns a token (invisible) used by spotifyr
+#' @importFrom spotifyr get_spotify_access_token
+auth_spotify <- function(client_id = NULL,
+                         client_secret = NULL, scope = c("public")) {
+  if(is.null(client_id)) {
+    keysAPI <- get_config(env = "spotify")
+  } else {
+    keysAPI <- list("client_id" = client_id,
+                    "client_secret" = client_secret)
+  }
+  
+  stopifnot(nzchar(keysAPI$client_id), nzchar(keysAPI$client_secret))
+  
+  if(!("private" %in% scope)) {
+    ## public playlists only
+    token <- spotifyr::get_spotify_access_token(client_id = keysAPI$client_id,
+                                                client_secret = keysAPI$client_secret)
+  } else {
+    ## we need the scope playlist-read-private
+    ## Spotify interdit l'url utilise par spotifyr
+    tvc_get_spotify_authorization_code <- function (client_id = Sys.getenv("SPOTIFY_CLIENT_ID"),
+                                                    client_secret = Sys.getenv("SPOTIFY_CLIENT_SECRET"),
+                                                    scope = spotifyr::scopes()) {
+      endpoint <- httr::oauth_endpoint(authorize = "https://accounts.spotify.com/authorize", 
+                                       access = "https://accounts.spotify.com/api/token")
+      app <- httr::oauth_app(appname = "get-tvc",
+                             key = client_id,
+                             secret = client_secret,
+                             redirect_uri = "http://127.0.0.1:1410/")
+      # app <- httr::oauth_app(appname = "spotifyr",
+      #                        key = client_id,
+      #                        secret = client_secret,
+      #                        redirect_uri = "http://127.0.0.1:1410/")
+      token <- (purrr::safely(.f = httr::oauth2.0_token))(endpoint = endpoint, 
+                                                          app = app, scope = scope)
+      if (!is.null(token$error)) {
+        token$error
+      }
+      else {
+        token$result
+      }
+    }
+  
+    token <- tvc_get_spotify_authorization_code(
+      client_id = keysAPI$client_id,
+      client_secret = keysAPI$client_secret,
+      scope = "playlist-read-private"
+      )
+    token <- token$credentials$access_token
+  }
+  invisible(token)
+}
+```
+
+```{r examples-auth_spotify}
+token <- tvc:::auth_spotify()
+```
+
+```{r tests-auth_spotify}
+test_that("auth_spotify works", {
+  expect_true(inherits(auth_spotify, "function"))
+  expect_no_error(token <- auth_spotify())
+  expect_true(is.character(token))
+  expect_gt(nchar(token), expected = 100L)
+})
+```
+
+# GET Spotify Playlist
+
+```{r development-get_spotify_api_playlist}
+# Prepare the code of your function here
+limit = 20
+offset = 0
+authorization = token
+params <- list(limit = limit, offset = offset)
+base_url <- "https://api.spotify.com/v1/playlists/"
+playlist_id <- get_playlist_id(triad = "1 7")
+```
+
+```{r function-get_spotify_api_playlist}
+#' Get Tracks from Playlist Spotify
+#'
+#' @param env default to "spotify"
+#' @param playlist_id a playlist id
+#' @param market an additional parameter passed to the Spotify API
+#' @param fields an additional parameter passed to the Spotify API
+#' @param scope either "public" or "private".
+#' @param verbose print message in console
+#'
+#' @return \code{get_spotify_api_playlist} returns a tibble with spotify data. 1 row per song and a featured artist.
+#' @export
+#' @importFrom attempt stop_if
+#' @importFrom dplyr bind_rows distinct mutate n relocate select contains rename_all left_join rename filter
+#' @importFrom purrr map compact
+#' @importFrom spotifyr get_playlist get_artists
+#' @importFrom tibble as_tibble
+#' @importFrom tidyr unnest
+get_spotify_api_playlist <- function(env = "spotify", playlist_id = NULL,
+                                     market = NULL, fields = NULL, scope = c("public", "private"),
+                                     verbose = TRUE) {
+  keysAPI <- get_config(env = "spotify")
+  stopifnot(nzchar(keysAPI$client_id), nzchar(keysAPI$client_secret))
+  # token <- spotifyr::get_spotify_access_token(client_id = keysAPI$client_id, client_secret = keysAPI$client_secret)
+  token <- auth_spotify(client_id = keysAPI$client_id, client_secret = keysAPI$client_secret, scope = scope)
+  
+  playlist <- spotifyr::get_playlist(playlist_id = playlist_id, authorization = token)
+  
+  ## Get Genre via artist details
+  artists <- playlist$tracks$items$track.artists %>% 
+    dplyr::bind_rows() %>% 
+    tibble::as_tibble() %>% 
+    dplyr::distinct()
+  
+  stepArtist <- 50L
+  artists <- seq(0L, nrow(artists), stepArtist) %>% 
+    purrr::map(.f = ~ 1L:stepArtist + .x) %>% 
+    purrr::map(.f = ~ .x[.x <= nrow(artists)]) %>% 
+    purrr::compact() %>% 
+    purrr::map(.f = ~ spotifyr::get_artists(ids = artists$id[.x],
+                                            authorization = token)) %>% 
+    dplyr::bind_rows() %>% 
+    tibble::as_tibble()
+  
+  ## Parsing
+  songs <- playlist$tracks$items %>%
+    tibble::as_tibble() %>% 
+    ## Playlist Track Order
+    dplyr::mutate(Playlist_Order = 1L:dplyr::n()) %>% 
+    dplyr::relocate(Playlist_Order) %>% 
+    ## Remove useless columns
+    dplyr::select(-c(is_local, primary_color,
+                     track.preview_url, track.type, track.episode, track.track,
+                     track.album.type, track.album.album_type, track.album.id, track.album.artists,
+                     dplyr::contains("href"), dplyr::contains("uri"), dplyr::contains("urls"),
+                     dplyr::contains("available_markets"),
+                     dplyr::contains("is_local"), dplyr::contains("image"),
+                     dplyr::contains("added_by"))) %>% 
+    dplyr::mutate(track.artists = purrr::map(track.artists, ~ dplyr::rename_all(.x, .funs = ~paste0("artist_", .)))) %>% 
+    tidyr::unnest(cols = track.artists) %>% 
+    ## Genres
+    dplyr::left_join(dplyr::select(artists, id, genres),
+                     by = c("artist_id" = "id")) %>% 
+    dplyr::rename(ISRC = track.external_ids.isrc,
+                  Song = track.name,
+                  Artist = artist_name) %>% 
+    dplyr::select(-c(dplyr::contains("artist_"))) %>% 
+    dplyr::relocate(Song, Artist, ISRC) %>%
+    ## Key
+    dplyr::mutate(Key = as.character(NA)) %>% 
+    ## Compute Album Year
+    dplyr::rename(Album_Date = track.album.release_date) %>% 
+    dplyr::mutate(Album_Year = as.numeric(substr(Album_Date, 1, 4)))
+  attempt::stop_if(nrow(dplyr::filter(songs, is.na(Album_Year))) > 0L,
+                   msg = "Error parsing album year.") 
+  return(songs)
+}
+
+```
+
+```{r examples-get_spotify_api_playlist}
+playlist_id <- get_playlist_id(triad = "1 7")
+songs <- tvc:::get_spotify_api_playlist(
+  playlist_id = playlist_id,
+  scope = "public"
+)
+```
+
+```{r tests-get_spotify_api_playlist}
+test_that("get_spotify_api_playlist works", {
+  expect_true(inherits(get_spotify_api_playlist, "function"))
+  playlist_id <- get_playlist_id(triad = "1 7")
+  expect_no_error(songs <- get_spotify_api_playlist(playlist_id = playlist_id, scope = "public"))
+  expect_true(inherits(songs, "tbl"))
+  expect_gt(nrow(songs), expected = 10L)
+})
+```
+
+
+```{r development-inflate, eval=FALSE}
+# Run but keep eval=FALSE to avoid infinite loop
+# Execute in the console directly
+fusen::inflate(flat_file = "dev/flat_get_spotify_api_playlist.Rmd", vignette_name = "Get from spotify", check = FALSE)
+```
+

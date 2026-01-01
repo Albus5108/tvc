@@ -1,0 +1,18 @@
+default:
+  spotify:
+    base_url: https://api.spotify.com/v1
+    client_id: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    client_secret: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    auth_flow: authorization_code
+    redirect_uri: http://localhost:1410/
+    playlists:
+      - triad: "1 7"
+        name: "La Triade Vanessa Carlton"
+        playlist: "55hU8f5avA0Fydvs8KbqRD"
+  google:
+    auth: oauth
+    service_account_json:
+    base_url: "https://docs.google.com/spreadsheets/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    client_secret: "xxx"
+    songs_sheet: Songs
+    triade_sheet: Triade

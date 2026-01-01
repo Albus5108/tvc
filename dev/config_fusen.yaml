@@ -1,0 +1,151 @@
+flat_config.Rmd:
+  path: dev/flat_config.Rmd
+  state: active
+  R:
+  - R/get_config.R
+  - R/get_playlist_id.R
+  tests:
+  - tests/testthat/test-get_config.R
+  - tests/testthat/test-get_playlist_id.R
+  vignettes: vignettes/manage-config.Rmd
+  inflate:
+    flat_file: dev/flat_config.Rmd
+    vignette_name: Manage config
+    open_vignette: true
+    check: true
+    document: true
+    overwrite: ask
+    clean: ask
+    codecov: false
+flat_get_spotify_api_playlist.Rmd:
+  path: dev/flat_get_spotify_api_playlist.Rmd
+  state: active
+  R:
+  - R/auth_spotify.R
+  - R/get_spotify_api_playlist.R
+  tests:
+  - tests/testthat/test-auth_spotify.R
+  - tests/testthat/test-get_spotify_api_playlist.R
+  vignettes: vignettes/get-from-spotify.Rmd
+  inflate:
+    flat_file: dev/flat_get_spotify_api_playlist.Rmd
+    vignette_name: Get from spotify
+    open_vignette: true
+    check: false
+    document: true
+    overwrite: ask
+    clean: ask
+    codecov: false
+flat_insert_line_breaks_adaptive.Rmd:
+  path: dev/flat_insert_line_breaks_adaptive.Rmd
+  state: active
+  R: R/insert_line_breaks_adaptive.R
+  tests: tests/testthat/test-insert_line_breaks_adaptive.R
+  vignettes: vignettes/insert-line-breaks.Rmd
+  inflate:
+    flat_file: dev/flat_insert_line_breaks_adaptive.Rmd
+    vignette_name: Insert Line Breaks
+    open_vignette: true
+    check: true
+    document: true
+    overwrite: ask
+    clean: ask
+    codecov: false
+flat_parse_triade.Rmd:
+  path: dev/flat_parse_triade.Rmd
+  state: active
+  R: R/parse_triade.R
+  tests: tests/testthat/test-parse_triade.R
+  vignettes: vignettes/parse_triade.Rmd
+  inflate:
+    flat_file: dev/flat_parse_triade.Rmd
+    vignette_name: parse_triade
+    open_vignette: true
+    check: true
+    document: true
+    overwrite: ask
+    clean: ask
+    codecov: false
+flat_plot_tvc_histogram.Rmd:
+  path: dev/flat_plot_tvc_histogram.Rmd
+  state: active
+  R: R/plot_tvc_histogram.R
+  tests: tests/testthat/test-plot_tvc_histogram.R
+  vignettes: vignettes/plot_tvc_histogram.Rmd
+  inflate:
+    flat_file: dev/flat_plot_tvc_histogram.Rmd
+    vignette_name: plot_tvc_histogram
+    open_vignette: true
+    check: true
+    document: true
+    overwrite: ask
+    clean: ask
+    codecov: false
+flat_plot_tvc_network.Rmd:
+  path: dev/flat_plot_tvc_network.Rmd
+  state: active
+  R: R/plot_tvc_network.R
+  tests: tests/testthat/test-plot_tvc_network.R
+  vignettes: vignettes/plot_tvc_network.Rmd
+  inflate:
+    flat_file: dev/flat_plot_tvc_network.Rmd
+    vignette_name: plot_tvc_network
+    open_vignette: true
+    check: true
+    document: true
+    overwrite: ask
+    clean: ask
+    codecov: false
+flat_read_sheet_triad.Rmd:
+  path: dev/flat_read_sheet_triad.Rmd
+  state: active
+  R: R/read_sheet_triad.R
+  tests: tests/testthat/test-read_sheet_triad.R
+  vignettes: vignettes/read-googlesheet-triad.Rmd
+  inflate:
+    flat_file: dev/flat_read_sheet_triad.Rmd
+    vignette_name: Read Googlesheet Triad
+    open_vignette: true
+    check: false
+    document: true
+    overwrite: ask
+    clean: ask
+    codecov: false
+flat_scale_palette_triad.Rmd:
+  path: dev/flat_scale_palette_triad.Rmd
+  state: active
+  R:
+  - R/palette_gen_c.R
+  - R/scale_colour_tvc_c.R
+  - R/scale_fill_tvc_c.R
+  - R/tvc_corp_palette.R
+  tests:
+  - tests/testthat/test-tvc_corp_palette.R
+  - tests/testthat/test-palette_gen_c.R
+  - tests/testthat/test-scale_fill_tvc_c.R
+  - tests/testthat/test-scale_colour_tvc_c.R
+  vignettes: vignettes/custom-colour-palette.Rmd
+  inflate:
+    flat_file: dev/flat_scale_palette_triad.Rmd
+    vignette_name: Custom Colour Palette
+    open_vignette: true
+    check: false
+    document: true
+    overwrite: ask
+    clean: ask
+    codecov: false
+flat_write_missing_triade.Rmd:
+  path: dev/flat_write_missing_triade.Rmd
+  state: active
+  R: R/write_missing_triade.R
+  tests: tests/testthat/test-write_missing_triade.R
+  vignettes: vignettes/update-triade-google-sheet.Rmd
+  inflate:
+    flat_file: dev/flat_write_missing_triade.Rmd
+    vignette_name: Update Triade Google Sheet
+    open_vignette: true
+    check: true
+    document: true
+    overwrite: ask
+    clean: ask
+    codecov: false
