@@ -54,14 +54,18 @@ flat_insert_line_breaks_adaptive.Rmd:
 flat_parse_triade.Rmd:
   path: dev/flat_parse_triade.Rmd
   state: active
-  R: R/parse_triade.R
-  tests: tests/testthat/test-parse_triade.R
+  R:
+  - R/clean_song_title.R
+  - R/parse_triade.R
+  tests:
+  - tests/testthat/test-clean_song_title.R
+  - tests/testthat/test-parse_triade.R
   vignettes: vignettes/parse_triade.Rmd
   inflate:
     flat_file: dev/flat_parse_triade.Rmd
     vignette_name: parse_triade
     open_vignette: true
-    check: true
+    check: false
     document: true
     overwrite: ask
     clean: ask

@@ -23,25 +23,7 @@ parse_triade <- function(data, songs) {
     ## Join with songs info from Spotify
     dplyr::left_join(songs, by = dplyr::join_by(Song, Artist, ISRC)) %>%
     ## Nettoyer les noms de chansons
-    dplyr::mutate(Song = gsub(" - .*Remaster.*$", "", Song),
-                  Song = gsub("\\(feat.*\\)$", "", Song),
-                  Song = gsub("\\(from.*\\)$", "", Song),
-                  Song = gsub("Concerto for Trumpet and Orchestra in A-Flat Major",
-                              "Concerto for Trumpet (Arutiunian)",
-                              Song,
-                              fixed = TRUE),
-                  Song = gsub(" (with Chaka Khan)", "", Song, fixed = TRUE),
-                  Song = gsub(" - From  Over The Top  Soundtrack", "", Song, fixed = TRUE),
-                  Song = gsub("Bach, JS: Orchestral Suite No. 2 in B Minor, BWV 1067: VII. ", "", Song, fixed = TRUE),
-                  Song = gsub("(British National Anthem 1952-2022)", "", Song, fixed = TRUE),
-                  Song = gsub("/Soundtrack Version", "", Song, fixed = TRUE),
-                  Song = gsub("- Jeremy Wheatley Mix", "", Song, fixed = TRUE),
-                  Song = gsub("- Unedited Single Version; 2006 Remaster", "", Song, fixed = TRUE),
-                  Song = gsub(", BWV 565: I. Toccata", "", Song, fixed = TRUE),
-                  Song = gsub("(2024 Remaster)", "", Song, fixed = TRUE),
-                  Song = dplyr::if_else(Artist == "Le Youth" & Song == "Underwater",
-                                        paste(Song, "(LY)"), Song),
-                  Song = gsub(" \\)", "\\)", Song)) %>%
+    clean_song_title() %>%
     ## Affirmation
     dplyr::mutate(Affirmation = dplyr::if_else(is.na(Affirmation), "Discr\u00e8te", Affirmation),
                   Affirmation = factor(x = Affirmation,

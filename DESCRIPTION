@@ -20,12 +20,15 @@ Imports:
     igraph,
     magrittr,
     purrr,
+    scales,
     spotifyr,
     tibble,
     tidyr
 Suggests: 
+    kableExtra,
     knitr,
     rmarkdown,
+    tabr,
     testthat
 VignetteBuilder: 
     knitr

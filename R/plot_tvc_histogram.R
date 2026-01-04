@@ -22,18 +22,25 @@
 #' songs %>% 
 #'   plot_tvc_histogram()
 plot_tvc_histogram <- function(songs) {
+  eras <- tibble::tribble(
+    ~era, ~begin, ~end,
+    "Les prC)mices", NA, 1979,
+    "l'apogC)e fosterienne", 1979, 1983,
+    "la dC)rive AC", 1983, 1989,
+  )
+  # grepl(pattern = "Chicago|Foster|Airplay|Toni Braxton|Peter Cetera", x = Artist) 
+  
   songs %>% 
-    ## Remove classical music
-    dplyr::group_by(ISRC) %>% 
-    dplyr::filter(!any(purrr::map_lgl(.x = genres, .f = ~ "classical" %in% .x))) %>% 
-    dplyr::ungroup() %>% 
-    ## Keep one element per SOng, ISRC
+    ## Remove very old music
+    dplyr::filter(Album_Year > 1940) %>%
+    ## Keep one element per Song, ISRC
     dplyr::distinct(Song, ISRC, Album_Year, .keep_all = TRUE) %>% 
     ggplot2::ggplot() +
     ggplot2::aes(Album_Year) +
     ggplot2::geom_histogram(binwidth = 1) +
     ggplot2::annotate(geom = "label", x = c(1986, 2025), y = 5, label = c("1986", "2025")) +
     ggplot2::theme_bw() +
+    ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(n = 10)) +
     ggplot2::labs(x = "Album Year",
                   y = "Number of Songs",
                   title = "Occurences of VCT through History")
