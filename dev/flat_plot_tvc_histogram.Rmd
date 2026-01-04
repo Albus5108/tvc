@@ -33,9 +33,9 @@ pkgload::load_all(export_all = FALSE)
 plot_tvc_histogram <- function(songs) {
   eras <- tibble::tribble(
     ~era, ~begin, ~end,
-    "Les prémices", NA, 1979,
-    "l'apogée fosterienne", 1979, 1983,
-    "la dérive AC", 1983, 1989,
+    "Les premices", NA, 1979,
+    "l'apogee fosterienne", 1979, 1983,
+    "la derive AC", 1983, 1989,
   )
   # grepl(pattern = "Chicago|Foster|Airplay|Toni Braxton|Peter Cetera", x = Artist) 
   

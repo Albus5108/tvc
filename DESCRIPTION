@@ -20,6 +20,7 @@ Imports:
     igraph,
     magrittr,
     purrr,
+    rlang,
     scales,
     spotifyr,
     tibble,

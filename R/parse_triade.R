@@ -16,6 +16,14 @@
 #' songs <- tvc:::get_spotify_api_playlist(playlist_id = playlist_id, scope = "public")
 #' data <- parse_triade(triads, songs)
 parse_triade <- function(data, songs) {
+  
+  if(rlang::has_name(x = songs, name = "triad")) {
+    songs <- songs %>% 
+      ## AVoid duplicated songs
+      dplyr::select(-c(triad, name, playlist)) %>% 
+      dplyr::distinct(Song, Artist, ISRC, .keep_all = TRUE)
+  }
+  
   data2 <- data %>%
     ## Unnest artists
     dplyr::mutate(Artist = strsplit(x = Artist, split = ",\\s?")) %>% 
