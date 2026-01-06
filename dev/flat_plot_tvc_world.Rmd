@@ -1,0 +1,83 @@
+---
+title: "flat_plot_tvc_world.Rmd empty"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r development, include=FALSE}
+library(testthat)
+```
+
+```{r development-load}
+# Load already included functions if relevant
+pkgload::load_all(export_all = FALSE)
+```
+
+# plot_tvc_world
+
+```{r development-plot_tvc_world}
+# Prepare the code of your function here
+```
+
+```{r function-plot_tvc_world}
+#' Triad World Map
+#'
+#' @param triads a tibble of triads as returned by \code{\link{read_sheet_triad}}
+#'
+#' @return \code{plot_tvc_world} plots a world map. The colors indicate the number of tvc 
+#' @export
+#'
+#' @examples
+plot_tvc_world <- function(triads) {
+  world <- ggplot2::map_data("world") %>%
+    dplyr::filter(region != "Antarctica") %>%
+    ggplot2::fortify()
+  
+  regions <- googlesheets4::read_sheet(ss = get_config("google")$base_url, sheet = "Regions") %>%
+    dplyr::filter(!is.na(Region))
+  
+  region_triad <- triads %>%
+    dplyr::filter(`Ordre des Notes` == "1 7") %>%
+    dplyr::inner_join(regions, by = dplyr::join_by(Artist)) %>%
+    ## Stat by Country
+    dplyr::mutate(Region = strsplit(Region, split = ", ")) %>%
+    tidyr::unnest(Region) %>%
+    dplyr::group_by(Region) %>%
+    dplyr::summarise(nb_triad = dplyr::n()) %>%
+    dplyr::rename(region = Region)
+  
+  ggplot2::ggplot() +
+    ggplot2::geom_map(data = world,
+                      map = world,
+                      ggplot2::aes(map_id = region),
+                      fill = tvc:::tvc_corp_palette()[2], colour = "grey30", size=0.2) +
+    ggplot2::geom_map(data = region_triad,
+                      map = world, colour = "grey30", size=0.2,
+                      ggplot2::aes(fill = nb_triad, map_id = region)) +
+    ggplot2::coord_map("rectangular", lat0=0, xlim=c(-180,180), ylim=c(-60, 90)) +
+    scale_fill_tvc_c() +
+    ggplot2::scale_y_continuous(breaks=c()) +
+    ggplot2::scale_x_continuous(breaks=c()) +
+    ggplot2::labs(fill = "Number\nof TVC") +
+    ggplot2::theme_bw()
+}
+```
+
+```{r examples-plot_tvc_world}
+# plot_tvc_world(triads)
+```
+
+```{r tests-plot_tvc_world}
+test_that("plot_tvc_world works", {
+  expect_true(inherits(plot_tvc_world, "function"))
+})
+```
+
+
+```{r development-inflate, eval=FALSE}
+# Run but keep eval=FALSE to avoid infinite loop
+# Execute in the console directly
+fusen::inflate(flat_file = "dev/flat_plot_tvc_world.Rmd", vignette_name = "Triad World Map")
+```
+

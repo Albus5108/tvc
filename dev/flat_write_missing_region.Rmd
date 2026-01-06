@@ -1,0 +1,73 @@
+---
+title: "flat_write_missing_region.Rmd empty"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r development, include=FALSE}
+library(testthat)
+```
+
+```{r development-load}
+# Load already included functions if relevant
+pkgload::load_all(export_all = FALSE)
+```
+
+# write_missing_region
+
+```{r development-write_missing_region}
+# Prepare the code of your function here
+```
+
+```{r function-write_missing_region}
+#' Write Missing Region
+#'
+#' @param songs a tibble of songs x artists as returned by \code{\link{get_spotify_api_playlist}}
+#'
+#' @return \code{write_missing_region} write new artists with missing region in the triad google sheet. 
+#' @export
+#'
+#' @examples
+write_missing_region <- function(songs) {
+  regions <- googlesheets4::read_sheet(
+    ss = get_config("google")$base_url,
+    sheet = "Regions"
+  )
+  
+  songs %>%
+    dplyr::distinct(Artist, genres) %>%
+    # dplyr::distinct(genres, .keep_all = TRUE) %>% View()
+    dplyr::arrange(Artist) %>%
+    dplyr::mutate(Region = dplyr::case_when(
+      purrr::map_lgl(genres, .f = ~ any(c("chanson", "french jazz", "vari\u00e9t\u00e9 fran\u00c7aise", "french pop") %in% .x)) ~ "France",
+      purrr::map_lgl(genres, .f = ~ any(c("celtic") %in% .x)) ~ "Ireland",
+      purrr::map_lgl(genres, .f = ~ "swedish pop" %in% .x) ~ "Sweden",
+      purrr::map_lgl(genres, .f = ~ "norwegian pop" %in% .x) ~ "Norway",
+      purrr::map_lgl(genres, .f = ~ "k-ballad" %in% .x) ~ "South Korea",
+      TRUE ~ as.character(NA)
+    )) %>%
+    dplyr::anti_join(regions, by = dplyr::join_by(Artist)) %>%
+    dplyr::mutate(genres = purrr::map_chr(genres, .f = ~ paste(.x, collapse = ", "))) %>%
+    as.data.frame() %>%
+    googlesheets4::write_sheet(ss = get_config("google")$base_url, sheet = "New Regions")
+}
+```
+
+```{r examples-write_missing_region}
+# write_missing_region(songs)
+```
+
+```{r tests-write_missing_region}
+test_that("write_missing_region works", {
+  expect_true(inherits(write_missing_region, "function"))
+})
+```
+
+
+```{r development-inflate, eval=FALSE}
+# Run but keep eval=FALSE to avoid infinite loop
+# Execute in the console directly
+fusen::inflate(flat_file = "dev/flat_write_missing_region.Rmd", vignette_name = "Update Region Google Sheet")
+```
+

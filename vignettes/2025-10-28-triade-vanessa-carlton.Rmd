@@ -1,0 +1,298 @@
+---
+output: github_document
+---
+
+<!-- 2025-10-28-triade-vanessa-carlton.md is generated from 2025-10-28-triade-vanessa-carlton.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  # fig.path = ".",
+  out.width = "100%"
+)
+```
+
+```{r loading, include = FALSE}
+library(tvc)
+library(tabr)
+songs <- readRDS("../songs.RDS")
+triads <- read_sheet_triad()
+triads <- tvc:::parse_triade(triads, songs)
+```
+
+# La Triade Vanessa Carlton
+
+## If I could fall into the sky 
+
+La triade Vanessa Carlton, noté *1 7* désigne la succession ascendante d'une seconde mineure suivi d’une quinte. On la retrouve à trois reprises au chant dans le refrain de *"A Thousand Miles"* (2002). 
+
+> A Thousand Miles - Vanessa Carlton (Be not Nobody - 2002)
+
+Ce hit ultime, véritable emblème des années 2000, a été composé à 17 ans par Vanessa Carlton. Dans la version demo de la chanson, alors intitulée "Interlude", la mélodie en question est déjà là. Dans une [interview de 2021](https://www.vice.com/en/article/the-untold-story-of-vanessa-carlton-hit-song-a-thousand-miles/), le producteur Ron Fair se souvient :
+
+> [Le 1er refrain commence. NDLR] Boom! Number one record right from there, boom! It's a fuc*%ng smash, right there, when she sings that again with that string lick: that's where the wallets come out right there - Ron Fair (Music executive, producer "A Thousand Miles")
+
+La renaissance Carlton a une dimension syncrétique mais s'avère n'être qu'un acte isolé. En effet, en ce début de décennie ne s'alignent à côté *"A Thousand Miles"* que des triades anecdotiques et le marché nord-américain est étonnamment silencieux. La triade *1 7* et la sensibilité particulière de cette artiste puise ses origines dans une tradition plus ancienne.
+
+```{r Y2k, include=TRUE, echo=FALSE, results = 'asis'}
+songs %>%
+  dplyr::filter(triad  == "1 7") %>%
+  dplyr::filter(dplyr::between(Album_Year, 2000, 2002)) %>%
+  clean_song_title() %>%
+  ## Group Artists
+  dplyr::group_by(ISRC, Song, track.popularity, Album_Year) %>%
+  dplyr::summarise(Artist = paste(Artist, collapse = ", "), .groups = "drop") %>%
+  ## Popularity
+  dplyr::arrange(dplyr::desc(Artist %in% c("Vanessa Carlton",
+                                           "Maroon 5")),
+                 dplyr::desc(track.popularity)) %>%
+  dplyr::slice_head(n = 7) %>%
+  ## Sort Year
+  dplyr::arrange(Album_Year, dplyr::desc(track.popularity)) %>%
+  dplyr::select(-c(ISRC, track.popularity)) %>%
+  dplyr::relocate(Song, Artist, Album_Year) %>%
+  dplyr::rename(Artiste = Artist,
+                Chanson = Song,
+                `Sorti en` = Album_Year) %>%
+  kableExtra::kable(caption = "*Titres remarquables contenant une TVC et issus du début des années 2K*")
+```
+
+## Théorie musicale
+
+Dans une gamme majeure, la triade Vanessa Carlton se trouve aux deux emplacements suivants :
+
+- Soit en approchant le Ier degré - le do : si-do-sol
+- Soit en approchant le IVe degré - le fa : mi-fa-do
+
+```{r basic tvc, include=FALSE}
+musicI <- tabr::as_music(notes = "b1 c' g'",
+                        lyrics = tabr::as_lyrics("si do sol"),
+                        time = "4/4", 
+                        tempo = NA)
+musicIV <- tabr::as_music(notes = "e'1 f' c''",
+                        lyrics = tabr::as_lyrics("mi fa do"),
+                        time = "4/4",
+                        tempo = NA)
+# tabr::plot_music(g)
+# file = "./vignettes/2025-10-28-triade-vanessa-carlton-basic-tvc-I.png" #../../images/originals/
+file = "./2025-10-28-triade-vanessa-carlton-basic-tvc-I.png"
+tabr::render_music(music = musicI, file = file)
+# file = "./vignettes/2025-10-28-triade-vanessa-carlton-basic-tvc-IV.png"
+file = "./2025-10-28-triade-vanessa-carlton-basic-tvc-IV.png"
+tabr::render_music(music = musicIV, file = file)
+```
+
+| Degré I      | Degré IV      |
+| ------------- | ------------- |
+| ![Exemple de triade Vanessa Carlton I](D:/02-Pr_MUSIQUE/tvc/vignettes/2025-10-28-triade-vanessa-carlton-basic-tvc-I.png) | ![Exemple de triade Vanessa Carlton IV](D:/02-Pr_MUSIQUE/tvc/vignettes/2025-10-28-triade-vanessa-carlton-basic-tvc-IV.png) |
+
+Dans le cas de la gamme mineure harmonique, une troisièmme possibilité s'offre au compositeur : 
+
+- En approchant le Ier degré (mineur) - le la : sol#-la-mi
+
+```{r minor tvc, include=FALSE}
+musicIminor <- tabr::as_music(notes = "g#'1 a' e''",
+                        lyrics = tabr::as_lyrics(c("sol", "la", "mi")),
+                        time = "4/4", 
+                        tempo = NA)
+# tabr::plot_music(g)
+# file = "./vignettes/2025-10-28-triade-vanessa-carlton-basic-tvc-I-minor.png" #../../images/originals/
+file = "./2025-10-28-triade-vanessa-carlton-basic-tvc-I-minor.png"
+tabr::render_music(music = musicIminor, file = file)
+```
+
+![Exemple de triade Vanessa Carlton I minor](D:/02-Pr_MUSIQUE/tvc/vignettes/2025-10-28-triade-vanessa-carlton-basic-tvc-I-minor.png)
+
+## L’histoire de la triade
+
+La triade Vanessa Carlton était déjà utilisée à l'époque baroque. Une pièce de Bach composée vers 1739 en atteste.
+
+> Badinerie, mouvement final de la suite no 2 en si mineur (BWV 1067) - Jean-Sébastien Bach
+
+```{r oldest tvc, include=FALSE}
+songs %>% 
+  dplyr::filter(triad  == "1 7") %>% 
+  dplyr::group_by(ISRC, Song, Album_Year) %>% 
+  dplyr::summarise(Artist = head(Artist, 1L), .groups = "drop") %>% 
+  dplyr::arrange(Album_Year) %>% 
+  dplyr::relocate(Song, Artist)
+```
+
+On la retrouve également dans l'oeuvre de ces compositeurs et compositrices :
+```{r classical users tvc, include=TRUE, echo=FALSE, results = 'asis'}
+songs %>%
+  dplyr::filter(triad  == "1 7") %>% 
+  ## Identify classical music
+  dplyr::group_by(ISRC) %>%
+  dplyr::mutate(is_classical = any(purrr::map_lgl(.x = genres, .f = ~ "classical" %in% .x))) %>%
+  dplyr::mutate(Main_Artist = head(Artist, 1)) %>%
+  dplyr::ungroup() %>%
+  dplyr::filter(is_classical) %>% 
+  dplyr::arrange(Album_Year) %>% 
+  dplyr::distinct(Main_Artist) %>% 
+  dplyr::filter(!Main_Artist %in% c("Johann Sebastian Bach", "Traditional")) %>% 
+  dplyr::pull(Main_Artist) %>% 
+  paste(collapse = ", ") %>% 
+  cat()
+```
+.
+
+
+En ce qui concerne la musique populaire occidentale (notre principal cadre d’étude), la Triade Vanessa Carlton commence déjà à se manifester dès les années 60 et 70.
+
+```{r artists from the 60s and 70s, include=TRUE, echo=FALSE, results = 'asis'}
+songs %>%
+  dplyr::filter(triad  == "1 7") %>% 
+  dplyr::filter(dplyr::between(Album_Year, 1955, 1979)) %>% 
+  clean_song_title() %>% 
+  ## Group Artists
+  dplyr::group_by(ISRC, Song, track.popularity, Album_Year) %>% 
+  dplyr::summarise(Artist = paste(Artist, collapse = ", "), .groups = "drop") %>% 
+  ## Popularity
+  dplyr::arrange(dplyr::desc(Artist %in% c("The Beach Boys",
+                                           "Wings",
+                                           "Miles Davis, John Coltrane, Bill Evans")),
+                 dplyr::desc(track.popularity)) %>% 
+  dplyr::slice_head(n = 10) %>% 
+  ## Sort Year
+  dplyr::arrange(Album_Year) %>% 
+  dplyr::select(-c(ISRC, track.popularity)) %>% 
+  dplyr::relocate(Song, Artist, Album_Year) %>% 
+  dplyr::rename(Artiste = Artist,
+                Chanson = Song,
+                `Sorti en` = Album_Year) %>% 
+  kableExtra::kable(caption = "*Titres remarquables contenant une TVC et issus des années 60-70*")
+```
+
+Malgré ces timides apparitions, ce sont réellement les années 80 qui ont donné à la TVC ses lettres de noblesse, en l’associant au son pop love des ballades sirupeuses et de leur équivalent dans l’univers du Hair Metal : les power ballads.
+Pendant cette décennie dorée, la triade a été mise à l’honneur non plus “en passant”, jetée négligemment au sein d’une mélodie vocale plus complexe, mais bien en tant que motif mélodique isolé, parfois éructé par une guitare saturée de testostérone, parfois susurré par un synthétiseur DX7 éthéré.
+L'un des artisans de ce raz-de-marée est le producteur canadien aux multiples Grammies **David Foster**. A travers le duo Airplay qu'il formait avec Jay Graydon, son rôle de producteur et compositeur pour le groupe Chicago et plus tard pour la carrière solo de son chanteur **Peter Cetera**, il est à notre connaissance le principal pourvoyeur de triades Vanessa Carlton.
+
+```{r artists heavily using tvc, include=TRUE, echo=FALSE, results = 'asis', fig.cap='Artistes utilisant le plus la triade Vanessa Carlton'}
+## Artist having the most TVC in their disco
+triads %>%
+  dplyr::filter(`Ordre des Notes` == "1 7") %>%
+  ## Count Nb traids
+  dplyr::group_by(Artist) %>%
+  dplyr::summarise(Nb_triad = dplyr::n(),
+                   Nb_song = length(unique(ISRC)),
+                   First_Occurence = min(Album_Year)) %>%
+  dplyr::ungroup() %>%
+  dplyr::arrange(dplyr::desc(Nb_triad)) %>%
+  dplyr::arrange(dplyr::desc(Nb_song)) %>%
+  dplyr::slice_head(n = 8L) %>% 
+  dplyr::arrange(First_Occurence) %>%
+  dplyr::rename(Artiste = Artist,
+                `Nombre de TVC` = Nb_triad,
+                `Nombre de chansons` = Nb_song,
+                `Première occurence en` = First_Occurence) %>% 
+  kableExtra::kable(caption = '*Artistes utilisant le plus la triade Vanessa Carlton, toutes périodes confondues*')
+```
+
+Il en a été ainsi, jusqu’à ce que le public en soit probablement écoeuré, et que la triade soit mise en sommeil jusqu’à la renaissance Carlton qui devait lui donner son nom.
+On peut définir les ères de TVC :
+
+- avant 1979 : les prémices
+- 1979 - 1983 : l'apogée fosterienne
+- 1983 - 1989 : la dérive Adult Contemporary
+- à partir de 1990 : la récupération britannique
+
+En 1986, la triade Vanessa Carlton atteint un pic avec l'avénement de l'écurie Landau et la sortie triomphale du premier album studio de **Glenn Medeiros**, détenteur à ce jour du record du plus grand nombre d'enregistrements comportant une TVC. 
+
+```{r year 1986, include=TRUE, echo=FALSE, results = 'asis'}
+songs %>%
+  dplyr::filter(triad  == "1 7") %>% 
+  # dplyr::filter(!Degree  %in% c("I", "IV")) %>% 
+  dplyr::filter(dplyr::between(Album_Year, 1986, 1986)) %>% 
+  clean_song_title() %>% 
+  ## Group Artists
+  dplyr::group_by(ISRC, Song, track.popularity, Album_Year) %>% 
+  dplyr::summarise(Artist = paste(Artist, collapse = ", "), .groups = "drop") %>% 
+  ## Popularity
+  dplyr::arrange(dplyr::desc(Artist %in% c("")),
+                 dplyr::desc(track.popularity)) %>% 
+  dplyr::slice_head(n = 20) %>% 
+  ## Sort Artist
+  dplyr::arrange(Artist) %>% 
+  dplyr::select(-c(ISRC, track.popularity, Album_Year)) %>% 
+  dplyr::relocate(Song, Artist) %>% 
+  dplyr::rename(Artiste = Artist,
+                Chanson = Song) %>% 
+  kableExtra::kable(caption = "*Chansons TVC de l'année 1986*")
+```
+
+
+Cette année se distingue également par son innovation. Comme évoqué en introduction, la TVC est souvent placée en approchant le Ier degré ou IVème degré de la gamme majeure. En 1986, Cutting Crew et Madonna intègrent des TVC à la guitare sur le Vème degré de la gamme, ce qui fait intervenir une note étrangère à la gamme.
+
+> I've Been In Love Before - Cutting Crew (Broadcast 1986)
+
+> Live to Tell - Madonna (True Blue - 1986)
+
+De leur côté, David Foster et Chicago placent la TVC sur le bIIIème degré, en utilisant une harmonie sous-jacente adéquate : bIII ou bVII. 
+
+> All That My Heart Can Hold - David Foster (David Foster - 1986)
+
+> Niagara Falls - Chicago (Chicago 18 - 1986)
+
+```{r histogram tvc degrees, include=FALSE}
+# triads %>%
+#   dplyr::filter(triad  == "1 7") %>% 
+#   ## Remove very old music
+#   dplyr::filter(Album_Year > 1940) %>%
+#   ## Keep one element per Song, ISRC
+#   dplyr::distinct(Song, ISRC, Album_Year,  .keep_all = TRUE) %>% 
+#   ggplot2::ggplot() +
+#   ggplot2::aes(Album_Year, fill = Degree) +
+#   ggplot2::geom_histogram(binwidth = 1) +
+#   ggplot2::annotate(geom = "label", x = c(1986, 2025), y = 5, label = c("1986", "2025")) +
+#   ggplot2::theme_bw() +
+#   # scale_fill_tvc_c() +
+#   ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(n = 10)) +
+#   ggplot2::labs(x = "Album Year",
+#                 y = "Number of Songs",
+#                 title = "Occurences of VCT through History")
+```
+
+Après 2010, la triade Vanessa Carlton devient un élément de langage comme un autre, on parle de banalisation.
+
+```{r hist tvc eras, include=FALSE}
+
+```
+
+## Narrativité musicale - Interprétation de la triade :
+
+Pourquoi cette mélodie, cette succession de 3 notes, nous touche autant ? Qu’est-ce qu’elle veut nous dire ?
+Bien sûr, la musique se ressent avant de s’intellectualiser, et il est difficile de s’accorder sur une signification universelle. Mais la récurrence de la TVC nous pousse tout de même à nous interroger, à essayer de rechercher une interprétation. Ce qu’on peut commencer par dire, c’est que là où deux notes peuvent tout au mieux indiquer une direction et une couleur, trois notes suffisent à raconter une histoire, avec un début, un milieu et une fin
+La TVC est ascendante (chaque note est plus aiguë que la précédente) : le personnage principal de notre histoire va donc de l’avant, sans revenir en arrière.
+Et enfin, ce personnage fait deux pas successifs, qui correspondent aux deux intervalles constitutifs de la TVC : 
+
+- Le premier pas est un demi-ton, intervalle petit et dissonant qu’on peut interpréter comme de la fragilité ou de l’hésitation
+- Mais le deuxième pas est une quinte, intervalle grand et consonant, marqueur d’assertivité
+
+En juxtaposant dans une formule ultra-compacte cette paire d’intervalles, dissonant puis consonant, la TVC nous raconte en fait l’histoire du grand saut après des débuts hésitants.
+La TVC, c’est l’amoureux ou l’amoureuse transie qui n’a pas eu le courage d’avouer ses sentiments jusqu’ici, mais tente le tout pour le tout à la fin du film.
+C’est sans doute ce qui la rend si propice à habiller les chansons romantiques : un personnage qui ne sortirait pas de l’hésitation, ce serait frustrant ; au contraire, un personnage trop sûr de lui dès le début, ce serait barbant ; mais la succession des deux, c’est la définition même du sublime, du latin sublimis, “qui va en s’élevant”.
+La TVC, c’est aussi un chemin pour tenter de guérir en sortant des atermoiements qui suivent la fin d’une relation amoureuse : c’est certainement avec cette intention qu’elle est utilisée dans le morceau “Expert in a Dying Field” du groupe néo-zélandais The Beths.
+
+> Expert in a Dying Field - The Beths (Expert in a Dying Field - 2022)
+
+## La triade Vanessa Carlton au cinéma
+
+Compte tenu du bagage narratif qui accompagne la TVC, c’est sans surprise qu’on la retrouve dans des thèmes magnifiques de musique de film. La TVC évoque la magie, 
+
+> Fantasia (1940) : L’apprenti sorcier - Paul Dukas
+
+la liberté,
+
+> Alexandre le Bienheureux (1968) : Le ciel, la terre et l’eau - Vladimir Cosma feat. Isabelle Aubret
+
+> Wicked (2024) : Defying Gravity - Cynthia Erivo, Ariana Grande
+
+l’enfance, l'émerveillement ou encore l’Amour.
+
+> Cinema Paradiso (1988) : Maturity, Love Theme - Ennio et Andrea Morriconne
+
+Sans oublier que *"A Thousand Miles"* est mis à l'honneur dans les films *Legally Blonde (2001)* et *White Chicks (2004)*.
+
+Une liste [Letterboxd](https://letterboxd.com/albus5108/list/la-triade-vanessa-carlton-au-cinema/) recense les films dans lesquels la triade Vanessa Carlton tient une place significative.
