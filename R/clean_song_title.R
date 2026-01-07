@@ -10,7 +10,8 @@
 #' 
 #' @export
 #' @examples
-#' tibble::tibble(Song = c("You're So Sweet Darling, BWV 565: I. Toccata", "That's All Right - Remaster 2006 definitive edition"),
+#' tibble::tibble(Song = c("You're So Sweet Darling, BWV 565: I. Toccata",
+#'                         "That's All Right - Remaster 2006 definitive edition"),
 #'                Artist = c("Belzebuth & The Jeremies", "Benny Goodman")) %>% 
 #'   clean_song_title()
 clean_song_title <- function(.data){

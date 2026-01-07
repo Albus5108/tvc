@@ -23,7 +23,8 @@
 plot_tvc_network <- function(data) {
   data <- data %>% 
     dplyr::filter(!is.na(Degree),
-                  `Ordre des Notes` == "1 7")
+                  `Ordre des Notes` == "1 7") %>% 
+    dplyr::mutate(ISRC = dplyr::if_else(is.na(ISRC), Song, ISRC))
   #### Calcul des liens ####
   
   edges <- dplyr::bind_rows(
