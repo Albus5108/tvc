@@ -4,7 +4,7 @@
 \alias{plot_tvc_world}
 \title{Triad World Map}
 \usage{
-plot_tvc_world(triads)
+plot_tvc_world(triads, triadType = "1 7")
 }
 \arguments{
 \item{triads}{a tibble of triads as returned by \code{\link{read_sheet_triad}}}

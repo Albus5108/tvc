@@ -3,7 +3,7 @@
 #' Get Tracks from Playlist Spotify
 #'
 #' @param env default to "spotify"
-#' @param playlist_id a playlist id
+#' @param playlist_id a character vector specifying one or more playlist id
 #' @param market an additional parameter passed to the Spotify API
 #' @param fields an additional parameter passed to the Spotify API
 #' @param scope either "public" or "private".
@@ -26,15 +26,26 @@
 get_spotify_api_playlist <- function(env = "spotify", playlist_id = NULL,
                                      market = NULL, fields = NULL, scope = c("public", "private"),
                                      verbose = TRUE) {
+  init_playlist_id <- playlist_id
   keysAPI <- get_config(env = "spotify")
   stopifnot(nzchar(keysAPI$client_id), nzchar(keysAPI$client_secret))
   # token <- spotifyr::get_spotify_access_token(client_id = keysAPI$client_id, client_secret = keysAPI$client_secret)
   token <- auth_spotify(client_id = keysAPI$client_id, client_secret = keysAPI$client_secret, scope = scope)
   
-  playlist <- spotifyr::get_playlist(playlist_id = playlist_id, authorization = token)
-  
+  playlist <- tibble::tibble(playlist_id = playlist_id) %>% 
+    dplyr::mutate(
+      data = purrr::map(
+        .x = playlist_id,
+        .f = ~ spotifyr::get_playlist(playlist_id = .x,
+                                      authorization = token)
+      )
+    ) %>% 
+    dplyr::mutate(items = purrr::map(.x = data, .f = ~ .x$tracks$items)) %>% 
+    dplyr::select(-data) %>% 
+    tidyr::unnest(cols = items)
+                        
   ## Get Genre via artist details
-  artists <- playlist$tracks$items$track.artists %>% 
+  artists <- playlist$track.artists %>% 
     dplyr::bind_rows() %>% 
     tibble::as_tibble() %>% 
     dplyr::distinct()
@@ -50,7 +61,7 @@ get_spotify_api_playlist <- function(env = "spotify", playlist_id = NULL,
     tibble::as_tibble()
   
   ## Parsing
-  songs <- playlist$tracks$items %>%
+  songs <- playlist %>%
     tibble::as_tibble() %>% 
     ## Playlist Track Order
     dplyr::mutate(Playlist_Order = 1L:dplyr::n()) %>% 
@@ -77,9 +88,17 @@ get_spotify_api_playlist <- function(env = "spotify", playlist_id = NULL,
     dplyr::mutate(Key = as.character(NA)) %>% 
     ## Compute Album Year
     dplyr::rename(Album_Date = track.album.release_date) %>% 
-    dplyr::mutate(Album_Year = as.numeric(substr(Album_Date, 1, 4)))
-  attempt::stop_if(nrow(dplyr::filter(songs, is.na(Album_Year))) > 0L,
+    dplyr::mutate(Album_Year = as.numeric(substr(Album_Date, 1, 4))) %>% 
+    dplyr::arrange(factor(playlist_id, levels = init_playlist_id)) %>% 
+    tidyr::nest(data = -c(playlist_id)) %>% 
+    dplyr::pull(data)
+  if(length(songs) == 1L) {
+    songs <- songs[[1L]] # drop
+    attempt::stop_if(nrow(dplyr::filter(songs, is.na(Album_Year))) > 0L,
                    msg = "Error parsing album year.") 
+  } else {
+    names(songs) <- init_playlist_id
+  }
   return(songs)
 }
 

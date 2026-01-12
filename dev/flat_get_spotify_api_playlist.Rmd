@@ -109,7 +109,7 @@ playlist_id <- get_playlist_id(triad = "1 7")
 #' Get Tracks from Playlist Spotify
 #'
 #' @param env default to "spotify"
-#' @param playlist_id a playlist id
+#' @param playlist_id a character vector specifying one or more playlist id
 #' @param market an additional parameter passed to the Spotify API
 #' @param fields an additional parameter passed to the Spotify API
 #' @param scope either "public" or "private".
@@ -126,15 +126,26 @@ playlist_id <- get_playlist_id(triad = "1 7")
 get_spotify_api_playlist <- function(env = "spotify", playlist_id = NULL,
                                      market = NULL, fields = NULL, scope = c("public", "private"),
                                      verbose = TRUE) {
+  init_playlist_id <- playlist_id
   keysAPI <- get_config(env = "spotify")
   stopifnot(nzchar(keysAPI$client_id), nzchar(keysAPI$client_secret))
   # token <- spotifyr::get_spotify_access_token(client_id = keysAPI$client_id, client_secret = keysAPI$client_secret)
   token <- auth_spotify(client_id = keysAPI$client_id, client_secret = keysAPI$client_secret, scope = scope)
   
-  playlist <- spotifyr::get_playlist(playlist_id = playlist_id, authorization = token)
-  
+  playlist <- tibble::tibble(playlist_id = playlist_id) %>% 
+    dplyr::mutate(
+      data = purrr::map(
+        .x = playlist_id,
+        .f = ~ spotifyr::get_playlist(playlist_id = .x,
+                                      authorization = token)
+      )
+    ) %>% 
+    dplyr::mutate(items = purrr::map(.x = data, .f = ~ .x$tracks$items)) %>% 
+    dplyr::select(-data) %>% 
+    tidyr::unnest(cols = items)
+                        
   ## Get Genre via artist details
-  artists <- playlist$tracks$items$track.artists %>% 
+  artists <- playlist$track.artists %>% 
     dplyr::bind_rows() %>% 
     tibble::as_tibble() %>% 
     dplyr::distinct()
@@ -150,7 +161,7 @@ get_spotify_api_playlist <- function(env = "spotify", playlist_id = NULL,
     tibble::as_tibble()
   
   ## Parsing
-  songs <- playlist$tracks$items %>%
+  songs <- playlist %>%
     tibble::as_tibble() %>% 
     ## Playlist Track Order
     dplyr::mutate(Playlist_Order = 1L:dplyr::n()) %>% 
@@ -177,9 +188,17 @@ get_spotify_api_playlist <- function(env = "spotify", playlist_id = NULL,
     dplyr::mutate(Key = as.character(NA)) %>% 
     ## Compute Album Year
     dplyr::rename(Album_Date = track.album.release_date) %>% 
-    dplyr::mutate(Album_Year = as.numeric(substr(Album_Date, 1, 4)))
-  attempt::stop_if(nrow(dplyr::filter(songs, is.na(Album_Year))) > 0L,
+    dplyr::mutate(Album_Year = as.numeric(substr(Album_Date, 1, 4))) %>% 
+    dplyr::arrange(factor(playlist_id, levels = init_playlist_id)) %>% 
+    tidyr::nest(data = -c(playlist_id)) %>% 
+    dplyr::pull(data)
+  if(length(songs) == 1L) {
+    songs <- songs[[1L]] # drop
+    attempt::stop_if(nrow(dplyr::filter(songs, is.na(Album_Year))) > 0L,
                    msg = "Error parsing album year.") 
+  } else {
+    names(songs) <- init_playlist_id
+  }
   return(songs)
 }
 
@@ -203,6 +222,49 @@ test_that("get_spotify_api_playlist works", {
 })
 ```
 
+# get_spotify_api_triad_playlists
+    
+```{r development-get_spotify_api_triad_playlists}
+# You can prepare the code of the get_spotify_api_triad_playlists() function here
+```
+  
+```{r function-get_spotify_api_triad_playlists}
+#' Get All Triads
+#' 
+#' A Wrapper around \code{\link{get_spotify_api_playlist}} to get all triad's songs at once in an optimized way
+#' 
+#' @return \code{get_spotify_api_triad_playlists} returns a tibble of songs for different triads
+#' 
+#' @export
+get_spotify_api_triad_playlists <- function(){
+  ## Exemple Reading private playlist
+  # songsNegTVC <- tvc:::get_spotify_api_playlist(playlist_id = "1wAEEcvkLBETRvIs06BK1E", scope = "private")
+  tabTriads <- get_config(env = "spotify")$playlists %>%
+    purrr::transpose() %>%
+    tibble::as_tibble() %>%
+    tidyr::unnest(cols = c(triad, name, playlist))
+  
+  songs <- tabTriads %>%
+    # Filter out non-triad
+    dplyr::filter(grepl(pattern = "^-?[0-9]+ -?[0-9]+$", x = triad)) %>%
+    dplyr::mutate(songs = get_spotify_api_playlist(playlist_id = playlist, scope = "private"))
+  
+  songs <- songs %>%
+    tidyr::unnest(cols = songs)
+  
+  return(songs)
+}
+```
+  
+```{r example-get_spotify_api_triad_playlists}
+# get_spotify_api_triad_playlists()
+```
+  
+```{r tests-get_spotify_api_triad_playlists}
+test_that("get_spotify_api_triad_playlists works", {
+  expect_true(inherits(get_spotify_api_triad_playlists, "function")) 
+})
+```
 
 ```{r development-inflate, eval=FALSE}
 # Run but keep eval=FALSE to avoid infinite loop

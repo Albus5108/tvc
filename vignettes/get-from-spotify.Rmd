@@ -45,4 +45,14 @@ songs <- tvc:::get_spotify_api_playlist(
 
 
 
+# get_spotify_api_triad_playlists
+    
+  
+  
+```{r example-get_spotify_api_triad_playlists}
+# get_spotify_api_triad_playlists()
+```
+
+  
+
 

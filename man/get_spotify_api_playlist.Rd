@@ -16,7 +16,7 @@ get_spotify_api_playlist(
 \arguments{
 \item{env}{default to "spotify"}
 
-\item{playlist_id}{a playlist id}
+\item{playlist_id}{a character vector specifying one or more playlist id}
 
 \item{market}{an additional parameter passed to the Spotify API}
 

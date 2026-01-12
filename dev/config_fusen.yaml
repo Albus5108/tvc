@@ -23,9 +23,11 @@ flat_get_spotify_api_playlist.Rmd:
   R:
   - R/auth_spotify.R
   - R/get_spotify_api_playlist.R
+  - R/get_spotify_api_triad_playlists.R
   tests:
   - tests/testthat/test-auth_spotify.R
   - tests/testthat/test-get_spotify_api_playlist.R
+  - tests/testthat/test-get_spotify_api_triad_playlists.R
   vignettes: vignettes/get-from-spotify.Rmd
   inflate:
     flat_file: dev/flat_get_spotify_api_playlist.Rmd
@@ -110,7 +112,7 @@ flat_plot_tvc_world.Rmd:
     flat_file: dev/flat_plot_tvc_world.Rmd
     vignette_name: Triad World Map
     open_vignette: true
-    check: true
+    check: false
     document: true
     overwrite: ask
     clean: ask

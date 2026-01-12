@@ -9,7 +9,7 @@
 #'
 #' @examples
 #' # plot_tvc_world(triads)
-plot_tvc_world <- function(triads) {
+plot_tvc_world <- function(triads, triadType = "1 7") {
   world <- ggplot2::map_data("world") %>%
     dplyr::filter(region != "Antarctica") %>%
     ggplot2::fortify()
@@ -18,7 +18,7 @@ plot_tvc_world <- function(triads) {
     dplyr::filter(!is.na(Region))
   
   region_triad <- triads %>%
-    dplyr::filter(`Ordre des Notes` == "1 7") %>%
+    dplyr::filter(`Ordre des Notes` == triadType) %>%
     dplyr::inner_join(regions, by = dplyr::join_by(Artist)) %>%
     ## Stat by Country
     dplyr::mutate(Region = strsplit(Region, split = ", ")) %>%

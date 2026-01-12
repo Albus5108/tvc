@@ -103,6 +103,7 @@ attachment::att_amend_desc()
 
 ## Update README
 devtools::build_readme()
+devtools::build_rmd(files = "./vignettes/2025-10-28-triade-vanessa-carlton.Rmd")
 
 # Check the package
 devtools::check()
@@ -115,11 +116,13 @@ fusen::add_flat_template(template = "add", flat_name = "insert_line_breaks_adapt
 fusen::add_flat_template(template = "add", flat_name = "plot_tvc_histogram")
 fusen::add_flat_template(template = "add", flat_name = "plot_tvc_network")
 fusen::add_flat_template(template = "add", flat_name = "plot_tvc_network_artist")
+fusen::add_flat_template(template = "add", flat_name = "plot_tvc_world")
 fusen::add_flat_template(template = "add", flat_name = "write_missing_triade")
+fusen::add_flat_template(template = "add", flat_name = "write_missing_region")
 fusen::add_flat_template(template = "add", flat_name = "read_sheet_triad")
 fusen::add_flat_template(template = "add", flat_name = "scale_palette_triad")
 
-# perspective : article md, fonction wrapper read_all_triad, carte du monde de la triade a partir de nationalite des artistes ? fonction set_config, ajouter globals.R, ajouer un badge au README
+# perspective : article md, fonction set_config, ajouter globals.R
 
 # Inflate all flat files at once
 fusen::inflate_all()
