@@ -14,6 +14,57 @@ library(testthat)
 pkgload::load_all(export_all = FALSE)
 ```
 
+# group_countries
+    
+```{r development-group_countries}
+# You can prepare the code of the group_countries() function here
+```
+  
+```{r function-group_countries}
+#' Group Countries
+#' 
+#' This function aims at grouping countries that share artists music. For exemple, belgium singer Angèle is very popular in France so it makes sense to gather those two countries.
+#' 
+#' @return \code{group_countries} returns a tibble with an extra row \code{Region_Group}
+#' 
+#' @noRd
+group_countries <- function(.data, col_name) {
+  col_name <- rlang::enquo(col_name)
+  dplyr::mutate(
+    .data = .data,
+    Region_Group = dplyr::case_match(
+      !!col_name,
+      c("China", "Taiwan", "Singapore") ~ "China",
+      c("France", "Belgium") ~ "France",
+      c("Mexico", "Colombia", "Puerto Rico", "Cuba", "Panama", "Costa Rica") ~ "Caribbean",
+      c("Ireland", "UK") ~ "UK",
+      c("Australia", "New Zealand") ~ "Australia",
+      c("Sweden", "Norway", "Finland") ~ "Scandinavia",
+      .default = !!col_name
+    )
+  )
+}
+```
+  
+```{r example-group_countries}
+tibble::tibble(Region = c("Mexico", "Cuba", "Colombia", "France", "Belgium")) %>%
+  tvc:::group_countries(Region)
+```
+  
+```{r tests-group_countries}
+test_that("group_countries works", {
+  expect_true(inherits(group_countries, "function"))
+  expect_equal(
+    object = {
+      tibble::tibble(Region = c("Mexico", "Cuba", "Colombia", "France", "Belgium")) %>%
+        tvc:::group_countries(Region) %>%
+        dplyr::pull(Region_Group)
+    },
+    expected = c("Caribbean", "Caribbean", "Caribbean", "France", "France")
+  )
+})
+```
+
 # plot_tvc_world
 
 ```{r development-plot_tvc_world}
@@ -24,6 +75,7 @@ pkgload::load_all(export_all = FALSE)
 #' Triad World Map
 #'
 #' @param triads a tibble of triads as returned by \code{\link{read_sheet_triad}}
+#' @param triadType a character string specifying the triad.
 #'
 #' @return \code{plot_tvc_world} plots a world map. The colors indicate the number of tvc 
 #' @export
@@ -31,6 +83,8 @@ pkgload::load_all(export_all = FALSE)
 #' @examples
 plot_tvc_world <- function(triads, triadType = "1 7") {
   world <- ggplot2::map_data("world") %>%
+    group_countries(region) %>% 
+    dplyr::mutate(region = Region_Group) %>% 
     dplyr::filter(region != "Antarctica") %>%
     ggplot2::fortify()
   
@@ -43,17 +97,19 @@ plot_tvc_world <- function(triads, triadType = "1 7") {
     ## Stat by Country
     dplyr::mutate(Region = strsplit(Region, split = ", ")) %>%
     tidyr::unnest(Region) %>%
-    dplyr::group_by(Region) %>%
+    group_countries(Region) %>% 
+    dplyr::mutate(region = Region_Group) %>% 
+    dplyr::group_by(Region_Group) %>%
     dplyr::summarise(nb_triad = dplyr::n()) %>%
-    dplyr::rename(region = Region)
+    dplyr::rename(region = Region_Group)
   
   ggplot2::ggplot() +
     ggplot2::geom_map(data = world,
                       map = world,
                       ggplot2::aes(map_id = region),
-                      fill = tvc:::tvc_corp_palette()[2], colour = "grey30", size=0.2) +
+                      fill = tvc:::tvc_corp_palette()[2], colour = "grey30", linewidth = 0.2) +
     ggplot2::geom_map(data = region_triad,
-                      map = world, colour = "grey30", size=0.2,
+                      map = world, colour = "grey30", linewidth = 0.2,
                       ggplot2::aes(fill = nb_triad, map_id = region)) +
     ggplot2::coord_map("rectangular", lat0=0, xlim=c(-180,180), ylim=c(-60, 90)) +
     scale_fill_tvc_c() +

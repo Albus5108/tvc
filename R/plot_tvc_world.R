@@ -3,6 +3,7 @@
 #' Triad World Map
 #'
 #' @param triads a tibble of triads as returned by \code{\link{read_sheet_triad}}
+#' @param triadType a character string specifying the triad.
 #'
 #' @return \code{plot_tvc_world} plots a world map. The colors indicate the number of tvc 
 #' @export
@@ -11,6 +12,8 @@
 #' # plot_tvc_world(triads)
 plot_tvc_world <- function(triads, triadType = "1 7") {
   world <- ggplot2::map_data("world") %>%
+    group_countries(region) %>% 
+    dplyr::mutate(region = Region_Group) %>% 
     dplyr::filter(region != "Antarctica") %>%
     ggplot2::fortify()
   
@@ -23,9 +26,11 @@ plot_tvc_world <- function(triads, triadType = "1 7") {
     ## Stat by Country
     dplyr::mutate(Region = strsplit(Region, split = ", ")) %>%
     tidyr::unnest(Region) %>%
-    dplyr::group_by(Region) %>%
+    group_countries(Region) %>% 
+    dplyr::mutate(region = Region_Group) %>% 
+    dplyr::group_by(Region_Group) %>%
     dplyr::summarise(nb_triad = dplyr::n()) %>%
-    dplyr::rename(region = Region)
+    dplyr::rename(region = Region_Group)
   
   ggplot2::ggplot() +
     ggplot2::geom_map(data = world,

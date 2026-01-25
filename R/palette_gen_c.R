@@ -3,8 +3,11 @@
 #' Title
 #' 
 #' Description
+#' @param palette either gradient or "main" or ?
+#' @param direction 1 for onward or -1 for downward
+#' @param ... other params ?
 #' 
-#' @return a palette continuous
+#' @return \code{palette_gen_c} returns a palette continuous
 #' 
 #' @noRd
 #' @examples

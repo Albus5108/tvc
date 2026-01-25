@@ -33,6 +33,16 @@ tvc:::tvc_corp_palette()
 
   
 
+# palette_gen_d
+    
+  
+  
+```{r example-palette_gen_d}
+tvc:::palette_gen_d()
+```
+
+  
+
 # palette_gen_c
     
   
@@ -58,6 +68,26 @@ scale_fill_tvc_c()
   
 ```{r example-scale_colour_tvc_c}
 scale_colour_tvc_c()
+```
+
+  
+
+# scale_fill_tvc_d
+    
+  
+  
+```{r example-scale_fill_tvc_d}
+scale_fill_tvc_d()
+```
+
+  
+
+# scale_colour_tvc_d
+    
+  
+  
+```{r example-scale_colour_tvc_d}
+scale_colour_tvc_d()
 ```
 
   

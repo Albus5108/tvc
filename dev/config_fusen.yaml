@@ -105,14 +105,18 @@ flat_plot_tvc_network.Rmd:
 flat_plot_tvc_world.Rmd:
   path: dev/flat_plot_tvc_world.Rmd
   state: active
-  R: R/plot_tvc_world.R
-  tests: tests/testthat/test-plot_tvc_world.R
+  R:
+  - R/group_countries.R
+  - R/plot_tvc_world.R
+  tests:
+  - tests/testthat/test-group_countries.R
+  - tests/testthat/test-plot_tvc_world.R
   vignettes: vignettes/triad-world-map.Rmd
   inflate:
     flat_file: dev/flat_plot_tvc_world.Rmd
     vignette_name: Triad World Map
     open_vignette: true
-    check: false
+    check: true
     document: true
     overwrite: ask
     clean: ask
@@ -137,14 +141,20 @@ flat_scale_palette_triad.Rmd:
   state: active
   R:
   - R/palette_gen_c.R
+  - R/palette_gen_d.R
   - R/scale_colour_tvc_c.R
+  - R/scale_colour_tvc_d.R
   - R/scale_fill_tvc_c.R
+  - R/scale_fill_tvc_d.R
   - R/tvc_corp_palette.R
   tests:
   - tests/testthat/test-tvc_corp_palette.R
+  - tests/testthat/test-palette_gen_d.R
   - tests/testthat/test-palette_gen_c.R
   - tests/testthat/test-scale_fill_tvc_c.R
   - tests/testthat/test-scale_colour_tvc_c.R
+  - tests/testthat/test-scale_fill_tvc_d.R
+  - tests/testthat/test-scale_colour_tvc_d.R
   vignettes: vignettes/custom-colour-palette.Rmd
   inflate:
     flat_file: dev/flat_scale_palette_triad.Rmd

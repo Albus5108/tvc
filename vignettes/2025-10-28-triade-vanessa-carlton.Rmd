@@ -260,6 +260,31 @@ Après 2010, la triade Vanessa Carlton devient un élément de langage comme un 
 
 ```
 
+```{r year 2025, include=TRUE, echo=FALSE, results = 'asis'}
+songs %>%
+  # dplyr::filter(triad  == "1 7") %>% 
+  # dplyr::filter(!Degree  %in% c("I", "IV")) %>% 
+  dplyr::filter(dplyr::between(Album_Year, 2025, 2025)) %>% 
+  clean_song_title() %>% 
+  ## Remove duplicates
+  dplyr::select(-c(triad, name, playlist, Playlist_Order, added_at)) %>% 
+  dplyr::distinct() %>% 
+  ## Group Artists
+  dplyr::group_by(ISRC, Song, track.popularity, Album_Year) %>% 
+  dplyr::summarise(Artist = paste(Artist, collapse = ", "), .groups = "drop") %>% 
+  ## Popularity
+  dplyr::arrange(dplyr::desc(Artist %in% c("")),
+                 dplyr::desc(track.popularity)) %>% 
+  # dplyr::slice_head(n = 20) %>% 
+  ## Sort Artist
+  dplyr::arrange(Artist) %>% 
+  dplyr::select(-c(ISRC, track.popularity, Album_Year)) %>% 
+  dplyr::relocate(Song, Artist) %>% 
+  dplyr::rename(Artiste = Artist,
+                Chanson = Song) %>% 
+  kableExtra::kable(caption = "*Chansons TVC de l'année 2025*")
+```
+
 ## Narrativité musicale - Interprétation de la triade :
 
 Pourquoi cette mélodie, cette succession de 3 notes, nous touche autant ? Qu’est-ce qu’elle veut nous dire ?

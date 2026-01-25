@@ -8,6 +8,8 @@ plot_tvc_world(triads, triadType = "1 7")
 }
 \arguments{
 \item{triads}{a tibble of triads as returned by \code{\link{read_sheet_triad}}}
+
+\item{triadType}{a character string specifying the triad.}
 }
 \value{
 \code{plot_tvc_world} plots a world map. The colors indicate the number of tvc

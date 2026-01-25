@@ -24,35 +24,78 @@ pkgload::load_all(export_all = FALSE)
 #' Plot Occurences Histogram
 #'
 #' @param songs a tibble with at least a column `Album_Year`, `Song` and `ISRC`.
+#' @param triadType a character string specifying the triad.
 #'
 #' @return \code{plot_tvc_histogram} returns a plot
 #' @export
 #'
 #' @importFrom ggplot2 ggplot aes geom_histogram theme_bw labs
 #' @examples
-plot_tvc_histogram <- function(songs) {
-  eras <- tibble::tribble(
-    ~era, ~begin, ~end,
-    "Les premices", NA, 1979,
-    "l'apogee fosterienne", 1979, 1983,
-    "la derive AC", 1983, 1989,
-  )
+plot_tvc_histogram <- function(songs, triadType = "1 7") {
+  # eras <- tibble::tribble(
+  #   ~era, ~begin, ~end,
+  #   "Les premices", NA, 1979,
+  #   "l'apogee fosterienne", 1979, 1983,
+  #   "la derive AC", 1983, 1989,
+  # )
   # grepl(pattern = "Chicago|Foster|Airplay|Toni Braxton|Peter Cetera", x = Artist) 
   
   songs %>% 
+    dplyr::mutate(
+      triad_type = factor(dplyr::if_else(triad == triadType,
+                                  triadType,
+                                  "Others"), levels = c("Others", triadType))
+    ) %>% 
     ## Remove very old music
     dplyr::filter(Album_Year > 1940) %>%
     ## Keep one element per Song, ISRC
-    dplyr::distinct(Song, ISRC, Album_Year, .keep_all = TRUE) %>% 
+    dplyr::distinct(Song, ISRC, Album_Year, triad_type, .keep_all = TRUE) %>% 
     ggplot2::ggplot() +
-    ggplot2::aes(Album_Year) +
+    ggplot2::aes(Album_Year, fill = triad_type) +
     ggplot2::geom_histogram(binwidth = 1) +
     ggplot2::annotate(geom = "label", x = c(1986, 2025), y = 5, label = c("1986", "2025")) +
+    scale_fill_tvc_d(palette = "main", direction = -1) +
     ggplot2::theme_bw() +
     ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(n = 10)) +
     ggplot2::labs(x = "Album Year",
                   y = "Number of Songs",
                   title = "Occurences of VCT through History")
+  
+  # songs <- songs %>% 
+  #   dplyr::left_join(w_time_space2, by = dplyr::join_by(ISRC))
+  # songs %>%
+  #   dplyr::mutate(
+  #     triad_type = factor(dplyr::if_else(triad == triadType,
+  #                                 triadType,
+  #                                 "Others"), levels = c("Others", triadType))
+  #   ) %>% 
+  #   dplyr::left_join(w_time_space2, by = dplyr::join_by(ISRC)) %>%
+  #   dplyr::mutate(weighted_year_country = dplyr::if_else(is.na(weighted_year_country),
+  #                                                        1,
+  #                                                        weighted_year_country)) %>%
+  #   # dplyr::filter(Album_Year == 2024) %>%
+  #   # dplyr::filter(is.na(weighted_year_country)) %>%
+  #   # View()
+  #   ## Remove very old music
+  #   dplyr::filter(Album_Year > 1940) %>%
+  #   ## Keep one element per Song, ISRC
+  #   dplyr::distinct(Song, ISRC, Album_Year, triad_type, .keep_all = TRUE) %>%
+  #   ## Stat
+  #   dplyr::group_by(Album_Year, triad_type) %>%
+  #   dplyr::summarise(
+  #     Nb_Songs = dplyr::n(),
+  #     Weighted_Nb_Songs = sum(weighted_year_country, na.rm = TRUE)
+  #   ) %>%
+  #   ggplot2::ggplot() +
+  #   ggplot2::aes(Album_Year, Weighted_Nb_Songs, fill = triad_type) + #Weighted_Nb_Songs) +
+  #   ggplot2::geom_col() +
+  #   ggplot2::annotate(geom = "label", x = c(1986, 2025), y = 5, label = c("1986", "2025")) +
+  #   scale_fill_tvc_d(palette = "main", direction = -1) +
+  #   ggplot2::theme_bw() +
+  #   ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(n = 10)) +
+  #   ggplot2::labs(x = "Album Year",
+  #                 y = "Number of Songs",
+  #                 title = "Occurences of VCT through History")
 }
 ```
 

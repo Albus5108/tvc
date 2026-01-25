@@ -23,6 +23,17 @@ library(tvc)
 
 
 
+# group_countries
+    
+  
+  
+```{r example-group_countries}
+tibble::tibble(Region = c("Mexico", "Cuba", "Colombia", "France", "Belgium")) %>%
+  tvc:::group_countries(Region)
+```
+
+  
+
 # plot_tvc_world
 
 

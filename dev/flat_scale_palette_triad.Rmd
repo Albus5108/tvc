@@ -57,6 +57,56 @@ test_that("tvc_corp_palette works", {
 })
 ```
 
+# palette_gen_d
+    
+```{r development-palette_gen_d}
+# You can prepare the code of the palette_gen_d() function here
+```
+  
+```{r function-palette_gen_d}
+#' Discrete Colour palette generation
+#' 
+#' Description
+#' @param palette either gradient or "main" or ?
+#' @param direction 1 for onward or -1 for downward
+#' @param ... other params ?
+#' 
+#' @return \code{palette_gen_d} returns a discrete colour palette
+#' 
+#' @noRd
+palette_gen_d <- function(palette = "main", direction = 1) {
+
+  function(n) {
+
+    if (n > length(tvc_corp_palette(palette))) {
+      warning("Not enough colors in this palette!")
+    } else {
+
+      all_colors <- tvc_corp_palette(palette)
+
+      all_colors <- unname(unlist(all_colors))
+      
+      all_colors <- head(all_colors, n = n)
+
+      all_colors <- if (direction >= 0) all_colors else rev(all_colors)
+
+      color_list <- all_colors[1:n]
+
+    }
+  }
+}
+```
+  
+```{r example-palette_gen_d}
+tvc:::palette_gen_d()
+```
+  
+```{r tests-palette_gen_d}
+test_that("palette_gen_d works", {
+  expect_true(inherits(palette_gen_d, "function")) 
+})
+```
+
 # palette_gen_c
     
 ```{r development-palette_gen_c}
@@ -68,8 +118,11 @@ scales::show_col(tvc_corp_palette("main"), cex_label = 2)
 #' Title
 #' 
 #' Description
+#' @param palette either gradient or "main" or ?
+#' @param direction 1 for onward or -1 for downward
+#' @param ... other params ?
 #' 
-#' @return a palette continuous
+#' @return \code{palette_gen_c} returns a palette continuous
 #' 
 #' @noRd
 palette_gen_c <- function(palette = "gradient", direction = 1, ...) {
@@ -165,6 +218,82 @@ scale_colour_tvc_c()
 ```{r tests-scale_colour_tvc_c}
 test_that("scale_colour_tvc_c works", {
   expect_true(inherits(scale_colour_tvc_c, "function")) 
+})
+```
+
+# scale_fill_tvc_d
+    
+```{r development-scale_fill_tvc_d}
+# You can prepare the code of the scale_fill_tvc_d() function here
+```
+  
+```{r function-scale_fill_tvc_d}
+#' Discrete Fill Scale
+#' 
+#' Description
+#' @param palette either gradient or "main" or ?
+#' @param direction 1 for onward or -1 for downward
+#' @param ... other params ?
+#' 
+#' @return \code{scale_fill_tvc_d} returns the discrete tvc fill palette for areas.
+#' 
+#' @export
+scale_fill_tvc_d <- function(palette = "main", direction = 1, ...) {
+
+  ggplot2::discrete_scale(
+    aesthetics = "fill",
+    scale_name = "tvc",
+    palette_gen_d(palette, direction),
+    ...
+  )
+}
+```
+  
+```{r example-scale_fill_tvc_d}
+scale_fill_tvc_d()
+```
+  
+```{r tests-scale_fill_tvc_d}
+test_that("scale_fill_tvc_d works", {
+  expect_true(inherits(scale_fill_tvc_d, "function")) 
+})
+```
+
+# scale_colour_tvc_d
+    
+```{r development-scale_colour_tvc_d}
+# You can prepare the code of the scale_colour_tvc_d() function here
+```
+  
+```{r function-scale_colour_tvc_d}
+#' Discrete Colour Scale
+#' 
+#' Description
+#' @param palette either gradient or "main" or ?
+#' @param direction 1 for onward or -1 for downward
+#' @param ... other params ?
+#' 
+#' @return \code{scale_colour_tvc_d} returns the discrete tvc colour palette for points and lines.
+#' 
+#' @export
+scale_colour_tvc_d <- function(palette = "main", direction = 1, ...) {
+
+  ggplot2::discrete_scale(
+    aesthetics = "colour",
+    scale_name = "tvc",
+    palette_gen_d(palette, direction),
+    ...
+  )
+}
+```
+  
+```{r example-scale_colour_tvc_d}
+scale_colour_tvc_d()
+```
+  
+```{r tests-scale_colour_tvc_d}
+test_that("scale_colour_tvc_d works", {
+  expect_true(inherits(scale_colour_tvc_d, "function")) 
 })
 ```
 
