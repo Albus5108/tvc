@@ -3,23 +3,43 @@
 #' Triad Coverage
 #'
 #' @param triads a tibble triad
+#' @param weighted a boolean specifying if songs should be weighted using tvc's bias correction method
 #'
 #' @return \code{triad_coverage} returns a tibble
 #' @export
 #'
 #' @examples
 #' triads <- read_sheet_triad()
-#' triad_coverage(triads)
-triad_coverage <- function(triads) {
+#' dat <- triad_coverage(triads = triads)
+triad_coverage <- function(triads, weighted = TRUE) {
   tabTriads <- get_config(env = "spotify")$playlists %>%
     purrr::transpose() %>%
     tibble::as_tibble() %>%
     tidyr::unnest(cols = c(triad, name, playlist))
+  
+  if(weighted) {
+    attempt::stop_if_not(rlang::has_name(triads, name = "weighted_year_country"),
+                         msg = "triads must have a column weighted_year_country")
+  } else {
+    triads <- triads %>% 
+      dplyr::mutate(weighted_year_country = 1L)
+  }
+  
   dat <- triads %>%
+    ## Count Number of Song per Triad
+    dplyr::group_by(triad) %>%
+    dplyr::summarise(
+      Nb_Songs = length(unique(paste(ISRC, Song))),
+      Weighted_Nb_Songs = sum(weighted_year_country, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    ## Join with triad names
+    dplyr::full_join(dplyr::select(tabTriads, triad, name),
+                     by = dplyr::join_by(triad)) %>%
     # Filter out non-triad
-    dplyr::filter(grepl(pattern = "^-?[0-9]+ -?[0-9]+$", x = `Ordre des Notes`)) %>%
+    dplyr::filter(grepl(pattern = "^-?[0-9]+ -?[0-9]+$", x = triad)) %>%
     ## Extract Intervals
-    dplyr::mutate(triad_tmp = `Ordre des Notes`) %>%
+    dplyr::mutate(triad_tmp = triad) %>%
     tidyr::extract(col = triad_tmp, into = c("First_Interval", "Second_Interval"), regex = "^(.*) (.*)$") %>%
     dplyr::mutate(dplyr::across(.cols = c(First_Interval, Second_Interval), .fns = as.integer)) %>%
     ## Filter Out Negative Triad etc.
@@ -27,25 +47,10 @@ triad_coverage <- function(triads) {
     # dplyr::filter(dplyr::between(First_Interval, 0L, 2L),
     #               dplyr::between(Second_Interval, 3L, 11L)) %>%
     dplyr::mutate(dplyr::across(.cols = c(First_Interval, Second_Interval), .fns = as.factor)) %>%
-    ## Count Number of Song per Triad
-    dplyr::group_by(`Ordre des Notes`, First_Interval, Second_Interval) %>%
-    dplyr::summarise(Nb_Songs = length(unique(paste(ISRC, Song))), .groups = "drop") %>%
-    ## Join with triad names
-    dplyr::left_join(dplyr::select(tabTriads, triad, name),
-                     by = dplyr::join_by(`Ordre des Notes` == triad)) %>%
+    ## Fill empty triad --> Nb songs set to zero
+    # dplyr::mutate(dplyr::across(.cols = c(Nb_Songs, Weighted_Nb_Songs),
+    #                             .fns = ~ dplyr::if_else(is.na(.), 0, .))) %>% 
+    ## Fix triad names
     dplyr::mutate(name = gsub(" \\(.*\\)$", "", name))
-  dat %>%
-    ggplot2::ggplot() +
-    ggplot2::aes(x = First_Interval, y = Second_Interval, fill = Nb_Songs,
-                 colour = `Ordre des Notes` %in% c("1 7", "-1 8", "-1 -7")) +
-    ggplot2::geom_raster() +
-    ggplot2::geom_text(ggplot2::aes(label = sub("Triade ", "Triade\n", name)),
-                       colour = dplyr::if_else(dat$Nb_Songs < 160L, "black", "white")) +
-    # ggplot2::scale_x_discrete(limits = as.character(1:2)) +
-    # ggplot2::scale_y_continuous(breaks = 5:10) +
-    ggplot2::labs(x = "First Interval",
-                  y = "Second Interval",
-                  fill = "Number of\nSongs") +
-    ggplot2::theme_bw() +
-    scale_fill_tvc_c()
+  return(dat)
 }

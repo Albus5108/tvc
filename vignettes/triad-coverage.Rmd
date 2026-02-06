@@ -28,9 +28,20 @@ library(tvc)
 
 ```{r examples-triad_coverage}
 triads <- read_sheet_triad()
-triad_coverage(triads)
+dat <- triad_coverage(triads = triads)
 ```
 
 
+
+# plot_triad_coverage
+    
+  
+  
+```{r example-plot_triad_coverage}
+triads <- read_sheet_triad()
+plot_triad_coverage(triads = triads)
+```
+
+  
 
 

@@ -4,12 +4,16 @@
 \alias{plot_tvc_world}
 \title{Triad World Map}
 \usage{
-plot_tvc_world(triads, triadType = "1 7")
+plot_tvc_world(triads, regions = NULL, triadType = "1 7", weighted = TRUE)
 }
 \arguments{
 \item{triads}{a tibble of triads as returned by \code{\link{read_sheet_triad}}}
 
+\item{regions}{a tibble giving for each artist his/her origin country.}
+
 \item{triadType}{a character string specifying the triad.}
+
+\item{weighted}{a boolean specifying if songs should be weighted using tvc's bias correction method}
 }
 \value{
 \code{plot_tvc_world} plots a world map. The colors indicate the number of tvc

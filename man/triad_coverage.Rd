@@ -4,10 +4,12 @@
 \alias{triad_coverage}
 \title{Triad Coverage}
 \usage{
-triad_coverage(triads)
+triad_coverage(triads, weighted = TRUE)
 }
 \arguments{
 \item{triads}{a tibble triad}
+
+\item{weighted}{a boolean specifying if songs should be weighted using tvc's bias correction method}
 }
 \value{
 \code{triad_coverage} returns a tibble
@@ -17,5 +19,5 @@ Triad Coverage
 }
 \examples{
 triads <- read_sheet_triad()
-triad_coverage(triads)
+dat <- triad_coverage(triads = triads)
 }

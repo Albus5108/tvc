@@ -3,6 +3,7 @@
 #' Plot Occurences Histogram
 #'
 #' @param songs a tibble with at least a column `Album_Year`, `Song` and `ISRC`.
+#' @param triadType a character string specifying the triad.
 #'
 #' @return \code{plot_tvc_histogram} returns a plot
 #' @export
@@ -21,24 +22,91 @@
 #'                                                  sd = 7)))
 #' songs %>% 
 #'   plot_tvc_histogram()
-plot_tvc_histogram <- function(songs) {
-  eras <- tibble::tribble(
-    ~era, ~begin, ~end,
-    "Les premices", NA, 1979,
-    "l'apogee fosterienne", 1979, 1983,
-    "la derive AC", 1983, 1989,
-  )
+plot_tvc_histogram <- function(songs, triadType = "1 7", group_year = 1L, weighted = TRUE) {
+  # eras <- tibble::tribble(
+  #   ~era, ~begin, ~end,
+  #   "Les premices", NA, 1979,
+  #   "l'apogee fosterienne", 1979, 1983,
+  #   "la derive AC", 1983, 1989,
+  # )
   # grepl(pattern = "Chicago|Foster|Airplay|Toni Braxton|Peter Cetera", x = Artist) 
   
-  songs %>% 
+  # songs %>% 
+  #   ## songs with triadTypoe vs without triadType
+  #   dplyr::group_by(ISRC) %>% 
+  #   dplyr::mutate(
+  #     triad_type = factor(dplyr::if_else(any(triad %in% triadType),
+  #                                 triadType,
+  #                                 "Others"), levels = c("Others", triadType))
+  #   ) %>% 
+  #   dplyr::ungroup() %>% 
+  #   ## Remove very old music
+  #   dplyr::filter(Album_Year >= 1940) %>%
+  #   ## Keep one element per Song, ISRC
+  #   dplyr::distinct(Song, ISRC, Album_Year, triad_type, .keep_all = TRUE) %>% 
+  #   ## Years Group
+  #   dplyr::mutate(Year_Group = floor(Album_Year / group_year) * group_year) %>% 
+  #   ggplot2::ggplot() +
+  #   ggplot2::aes(Year_Group, fill = triad_type) +
+  #   ggplot2::geom_histogram(binwidth = group_year) +
+  #   ggplot2::annotate(geom = "label", x = c(1986, 2025), y = 5, label = c("1986", "2025")) +
+  #   scale_fill_tvc_d(palette = "main", direction = -1) +
+  #   ggplot2::theme_bw() +
+  #   ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(n = 10)) +
+  #   ggplot2::labs(x = "Album Year",
+  #                 y = "Number of Songs",
+  #                 title = "Occurences of VCT through History")
+  
+  if(weighted) {
+    attempt::stop_if_not(rlang::has_name(songs, name = "weighted_year_country"),
+                         msg = "songs must have a column weighted_year_country")
+  } else {
+    songs <- songs %>% 
+      dplyr::mutate(weighted_year_country = 1L)
+  }
+  
+  dat <- songs %>% 
+    ## songs with triadTypoe vs without triadType
+    dplyr::group_by(ISRC) %>% 
+    dplyr::mutate(
+      triad_type = factor(dplyr::if_else(any(triad %in% triadType),
+                                  triadType,
+                                  "Others"), levels = c("Others", triadType))
+    ) %>% 
+    # dplyr::filter(Album_Year == 2024) %>%
+    # dplyr::filter(is.na(weighted_year_country)) %>%
+    # View()
     ## Remove very old music
-    dplyr::filter(Album_Year > 1940) %>%
+    dplyr::filter(Album_Year >= 1940) %>%
     ## Keep one element per Song, ISRC
-    dplyr::distinct(Song, ISRC, Album_Year, .keep_all = TRUE) %>% 
+    dplyr::distinct(Song, ISRC, Album_Year, triad_type, .keep_all = TRUE) %>%
+    ## Years Group
+    dplyr::mutate(Year_Group = floor(Album_Year / group_year) * group_year) %>% 
+    ## Stat
+    dplyr::group_by(Year_Group, triad_type) %>%
+    dplyr::summarise(
+      Nb_Songs = dplyr::n(),
+      Weighted_Nb_Songs = sum(weighted_year_country, na.rm = TRUE),
+      .groups = "drop"
+    )
+  
+  dat %>%
+    dplyr::group_by(Year_Group) %>% 
+    dplyr::mutate(Confidence = sum(Nb_Songs)) %>%
+    dplyr::ungroup() %>% 
+    dplyr::mutate(Confidence = Confidence / max(Confidence)) %>%
     ggplot2::ggplot() +
-    ggplot2::aes(Album_Year) +
-    ggplot2::geom_histogram(binwidth = 1) +
-    ggplot2::annotate(geom = "label", x = c(1986, 2025), y = 5, label = c("1986", "2025")) +
+    ggplot2::aes(
+      x = Year_Group,
+      y = Weighted_Nb_Songs,
+      # alpha = Confidence,
+      fill = triad_type
+    ) + #Weighted_Nb_Songs) +
+    ggplot2::geom_col() +
+    ggplot2::annotate(geom = "label", x = c(1986, 2025),
+                      y = max(dat$Weighted_Nb_Songs) * .3,
+                      label = c("1986", "2025")) +
+    scale_fill_tvc_d(palette = "main", direction = -1) +
     ggplot2::theme_bw() +
     ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(n = 10)) +
     ggplot2::labs(x = "Album Year",

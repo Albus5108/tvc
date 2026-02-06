@@ -1,3 +1,53 @@
+flat_bias_correction_triad.Rmd:
+  path: dev/flat_bias_correction_triad.Rmd
+  state: active
+  R:
+  - R/apply_time_space_weight.R
+  - R/apply_triad_weight.R
+  - R/bias_correction_triad.R
+  - R/compute_interval_probability.R
+  - R/compute_time_space_weight.R
+  - R/compute_triad_probability.R
+  - R/compute_triad_weight.R
+  - R/mutate_triad_occurence_per_song.R
+  tests:
+  - tests/testthat/test-compute_interval_probability.R
+  - tests/testthat/test-compute_triad_probability.R
+  - tests/testthat/test-mutate_triad_occurence_per_song.R
+  - tests/testthat/test-compute_triad_weight.R
+  - tests/testthat/test-apply_triad_weight.R
+  - tests/testthat/test-compute_time_space_weight.R
+  - tests/testthat/test-apply_time_space_weight.R
+  - tests/testthat/test-bias_correction_triad.R
+  vignettes: vignettes/bias-correction.Rmd
+  inflate:
+    flat_file: dev/flat_bias_correction_triad.Rmd
+    vignette_name: Bias Correction
+    open_vignette: true
+    check: false
+    document: true
+    overwrite: ask
+    clean: ask
+    codecov: false
+flat_compute_population_estimates.Rmd:
+  path: dev/flat_compute_population_estimates.Rmd
+  state: active
+  R:
+  - R/compute_population_estimates.R
+  - R/estimate_population_by_country_year.R
+  tests:
+  - tests/testthat/test-estimate_population_by_country_year.R
+  - tests/testthat/test-compute_population_estimates.R
+  vignettes: vignettes/population-estimates.Rmd
+  inflate:
+    flat_file: dev/flat_compute_population_estimates.Rmd
+    vignette_name: Population Estimates
+    open_vignette: true
+    check: true
+    document: true
+    overwrite: ask
+    clean: ask
+    codecov: false
 flat_config.Rmd:
   path: dev/flat_config.Rmd
   state: active
@@ -82,7 +132,7 @@ flat_plot_tvc_histogram.Rmd:
     flat_file: dev/flat_plot_tvc_histogram.Rmd
     vignette_name: plot_tvc_histogram
     open_vignette: true
-    check: true
+    check: false
     document: true
     overwrite: ask
     clean: ask
@@ -116,7 +166,7 @@ flat_plot_tvc_world.Rmd:
     flat_file: dev/flat_plot_tvc_world.Rmd
     vignette_name: Triad World Map
     open_vignette: true
-    check: true
+    check: false
     document: true
     overwrite: ask
     clean: ask
@@ -165,6 +215,25 @@ flat_scale_palette_triad.Rmd:
     overwrite: ask
     clean: ask
     codecov: false
+flat_triad_coverage.Rmd:
+  path: dev/flat_triad_coverage.Rmd
+  state: active
+  R:
+  - R/plot_triad_coverage.R
+  - R/triad_coverage.R
+  tests:
+  - tests/testthat/test-triad_coverage.R
+  - tests/testthat/test-plot_triad_coverage.R
+  vignettes: vignettes/triad-coverage.Rmd
+  inflate:
+    flat_file: dev/flat_triad_coverage.Rmd
+    vignette_name: Triad Coverage
+    open_vignette: true
+    check: false
+    document: true
+    overwrite: ask
+    clean: ask
+    codecov: false
 flat_write_missing_region.Rmd:
   path: dev/flat_write_missing_region.Rmd
   state: active
@@ -195,3 +264,12 @@ flat_write_missing_triade.Rmd:
     overwrite: ask
     clean: ask
     codecov: false
+keep:
+  path: keep
+  state: active
+  R:
+  - R/globals.R
+  - R/tvc-package.R
+  - R/utils-pipe.R
+  tests: []
+  vignettes: vignettes/2025-10-28-triade-vanessa-carlton.Rmd

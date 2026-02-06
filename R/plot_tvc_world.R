@@ -4,24 +4,36 @@
 #'
 #' @param triads a tibble of triads as returned by \code{\link{read_sheet_triad}}
 #' @param triadType a character string specifying the triad.
+#' @param regions a tibble giving for each artist his/her origin country.
+#' @param weighted a boolean specifying if songs should be weighted using tvc's bias correction method
 #'
 #' @return \code{plot_tvc_world} plots a world map. The colors indicate the number of tvc 
 #' @export
 #'
 #' @examples
 #' # plot_tvc_world(triads)
-plot_tvc_world <- function(triads, triadType = "1 7") {
+plot_tvc_world <- function(triads, regions = NULL, triadType = "1 7", weighted = TRUE) {
   world <- ggplot2::map_data("world") %>%
     group_countries(region) %>% 
     dplyr::mutate(region = Region_Group) %>% 
     dplyr::filter(region != "Antarctica") %>%
     ggplot2::fortify()
   
-  regions <- googlesheets4::read_sheet(ss = get_config("google")$base_url, sheet = "Regions") %>%
-    dplyr::filter(!is.na(Region))
+  if(weighted) {
+    attempt::stop_if_not(rlang::has_name(triads, name = "weighted_year_country"),
+                         msg = "triads must have a column weighted_year_country")
+  } else {
+    triads <- triads %>% 
+      dplyr::mutate(weighted_year_country = 1L)
+  }
+  
+  if(is.null(regions)) {
+    regions <- googlesheets4::read_sheet(ss = get_config("google")$base_url, sheet = "Regions") %>%
+      dplyr::filter(!is.na(Region))
+  }
   
   region_triad <- triads %>%
-    dplyr::filter(`Ordre des Notes` == triadType) %>%
+    dplyr::filter(triad == triadType) %>%
     dplyr::inner_join(regions, by = dplyr::join_by(Artist)) %>%
     ## Stat by Country
     dplyr::mutate(Region = strsplit(Region, split = ", ")) %>%
@@ -29,16 +41,16 @@ plot_tvc_world <- function(triads, triadType = "1 7") {
     group_countries(Region) %>% 
     dplyr::mutate(region = Region_Group) %>% 
     dplyr::group_by(Region_Group) %>%
-    dplyr::summarise(nb_triad = dplyr::n()) %>%
+    dplyr::summarise(nb_triad = sum(weighted_year_country)) %>%
     dplyr::rename(region = Region_Group)
   
   ggplot2::ggplot() +
     ggplot2::geom_map(data = world,
                       map = world,
                       ggplot2::aes(map_id = region),
-                      fill = tvc:::tvc_corp_palette()[2], colour = "grey30", size=0.2) +
+                      fill = tvc:::tvc_corp_palette()[2], colour = "grey30", linewidth = 0.2) +
     ggplot2::geom_map(data = region_triad,
-                      map = world, colour = "grey30", size=0.2,
+                      map = world, colour = "grey30", linewidth = 0.2,
                       ggplot2::aes(fill = nb_triad, map_id = region)) +
     ggplot2::coord_map("rectangular", lat0=0, xlim=c(-180,180), ylim=c(-60, 90)) +
     scale_fill_tvc_c() +

@@ -18,7 +18,7 @@ group_countries <- function(.data, col_name) {
       !!col_name,
       c("China", "Taiwan", "Singapore") ~ "China",
       c("France", "Belgium") ~ "France",
-      c("Mexico", "Colombia", "Puerto Rico", "Cuba", "Panama", "Costa Rica") ~ "Caribbean",
+      c("Mexico", "Colombia", "Puerto Rico", "Cuba", "Panama", "Costa Rica", "Jamaica") ~ "Caribbean",
       c("Ireland", "UK") ~ "UK",
       c("Australia", "New Zealand") ~ "Australia",
       c("Sweden", "Norway", "Finland") ~ "Scandinavia",

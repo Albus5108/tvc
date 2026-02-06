@@ -1,0 +1,890 @@
+---
+title: "flat_bias_correction_triad.Rmd empty"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r development, include=FALSE}
+library(testthat)
+library(magrittr)
+```
+
+```{r development-load}
+# Load already included functions if relevant
+pkgload::load_all(export_all = FALSE)
+```
+
+# compute_interval_probability
+    
+```{r development-compute_interval_probability}
+# You can prepare the code of the compute_interval_probability() function here
+```
+  
+```{r function-compute_interval_probability}
+#' Compute Interval Probability
+#' 
+#' Generate Interval Probability
+#' 
+#' @param nb_interval 
+#' @param prob_alien 
+#'
+#' @return \code{compute_interval_probability} returns a numeric vector of probabilities
+#' 
+#' @noRd
+compute_interval_probability <- function(nb_interval = 10000L, prob_alien = 0.15){
+  major_scale <- c(prob_alien, 1, prob_alien, 1, 1, prob_alien, 1, prob_alien, 1, prob_alien, 1, 1)
+  minor_scale <- c(prob_alien, 1, 1, prob_alien, 1, prob_alien, 1, 1, prob_alien, prob_alien, 1, 1)
+  x <- list(rep(major_scale, 4L),
+            rep(minor_scale, 4L))
+  weight_scale <- c(1, .3)
+  scale <- sample(x = x, size = nb_interval, replace = TRUE, prob = weight_scale)
+  note_start <- purrr::map_dbl(
+    .x = scale,
+    .f = ~ sample(x = 1L:length(major_scale),
+                  size = 1L, replace = TRUE,
+                  prob = head(.x, length(major_scale)))
+  )
+  scope_interval <- seq_len(length(major_scale) * 2L - 1L) # notes from scale
+  raw_weight_interval <- sort(scope_interval, decreasing = TRUE)/max(scope_interval)
+  raw_weight_interval2 <- raw_weight_interval # exp(x = -0.3 *  (scope_interval - 1))
+  start_note_exp_descr <- 7L # if(x < 7) {-x} else {- x^2}
+  raw_weight_interval[start_note_exp_descr:length(raw_weight_interval)] <- raw_weight_interval[start_note_exp_descr:length(raw_weight_interval)] * raw_weight_interval2[1L:(length(raw_weight_interval) + 1L - start_note_exp_descr)]
+  # plot(raw_weight_interval)
+  number_notes <- purrr::pmap_dbl(
+    .l = list(scale,
+              note_start),
+    .f = ~ sample(x = scope_interval -1L, size = 1L, replace = TRUE,
+                  prob = raw_weight_interval * ..1[(..2 + 1L):(..2 + length(scope_interval) - 0L)])
+  )
+  intervals <- purrr::pmap_dbl(.l = list(note_start,
+                                         number_notes,
+                                         scale),
+                               .f = ~ sum(rep(1, length(..3))[..1:(..1 + ..2)]))
+  stat_interval <- table(intervals) / max(table(intervals))
+  
+  ## Old (only regular scales)
+  # major_scale <- c(2L, 2L, 1L, 2L, 2L, 2L, 1L)
+  # minor_scale <- c(2L, 1L, 2L, 2L, 1L, 3L, 1L)
+  # nb_interval <- 10000L
+  # x <- list(rep(major_scale, 4L),
+  #           rep(minor_scale, 4L))
+  # weight_scale <- c(1, .3)
+  # scale <- sample(x = x, size = nb_interval, replace = TRUE, prob = weight_scale)
+  # note_start <- sample(x = 1L:length(major_scale), size = nb_interval, replace = TRUE)
+  # scope_interval <- seq_len(length(major_scale) * 2L - 1L) # notes from scale
+  # weight_interval <- sort(scope_interval, decreasing = TRUE)/max(scope_interval) # exp(x = -0.3 *  (scope_interval - 1))
+  # number_notes <- sample(x = scope_interval -1L, size = nb_interval, replace = TRUE, prob = weight_interval)
+  # intervals <- purrr::pmap_dbl(.l = list(note_start,
+  #                                        number_notes,
+  #                                        scale),
+  #                              .f = ~ sum(..3[..1:(..1 + ..2)]))
+  # stat_interval <- table(intervals) / max(table(intervals))
+  # plot(stat_interval)
+  return(stat_interval)
+}
+```
+  
+```{r example-compute_interval_probability}
+stat_interval <- compute_interval_probability()
+```
+  
+```{r tests-compute_interval_probability}
+test_that("compute_interval_probability works", {
+  expect_true(inherits(compute_interval_probability, "function")) 
+  expect_lte(length(compute_interval_probability()), expected = 23L)
+})
+```
+
+# compute_triad_probability
+    
+```{r development-compute_triad_probability}
+# You can prepare the code of the compute_triad_probability() function here
+```
+  
+```{r function-compute_triad_probability}
+#' Compute Triad Probability
+#' 
+#' Description
+#' @param stat_interval a named numeric vector as returned by \code{compute_interval_probability}
+#'
+#' @return \code{compute_triad_probability} returns a tibble of theoretical triad probabilities
+#' 
+#' @noRd
+compute_triad_probability <- function(stat_interval){
+  interval_occurence0 <- tibble::tibble(
+    interval = as.integer(names(stat_interval)),
+    frequency = as.numeric(stat_interval)
+  ) %>% 
+    dplyr::cross_join(x = ., y = ., suffix = c("_first", "_second")) %>% 
+    dplyr::mutate(frequency = frequency_first * frequency_second) %>% 
+    ## Introducing Negative Intervals
+    dplyr::mutate(dplyr::across(dplyr::contains("interval"),
+                                .fns = ~ purrr::map(.x = ., .f = ~ .x * c(1, -1)))) %>% 
+    tidyr::unnest(cols = interval_first) %>% 
+    tidyr::unnest(cols = interval_second)
+  
+  interval_cum_occurence <- interval_occurence0 %>% 
+    dplyr::mutate(interval_cum = interval_first + interval_second) %>% 
+    dplyr::group_by(interval_cum) %>% 
+    dplyr::summarise(frequency = sum(frequency)) %>% 
+    dplyr::mutate(frequency = frequency / max(frequency))
+    # plot(interval_cum_occurence)
+  
+  interval_occurence <- interval_occurence0 %>% 
+    dplyr::select(-c(frequency_first, frequency_second)) %>% 
+    ## Range octave
+    dplyr::filter(
+      abs(interval_first) < 12,
+      abs(interval_second) < 12
+    ) %>% 
+    ## Take into account the interval between 1st and 3rd note
+    dplyr::mutate(interval_cum = interval_first + interval_second) %>% 
+    dplyr::filter(
+      abs(interval_cum) < 12
+    ) %>%
+    dplyr::left_join(
+      y = interval_cum_occurence,
+      by = dplyr::join_by(interval_cum),
+      suffix = c("", "_cum")
+    ) %>%
+    dplyr::mutate(frequency = frequency * frequency_cum) %>%
+    dplyr::select(-frequency_cum) %>%
+    ## Name triads
+    dplyr::mutate(triad = paste(interval_first, interval_second))
+  return(interval_occurence)
+}
+```
+  
+```{r example-compute_triad_probability}
+stat_interval <- compute_interval_probability(nb_interval = 3)
+interval_occurence <- compute_triad_probability(stat_interval)
+```
+  
+```{r tests-compute_triad_probability}
+test_that("compute_triad_probability works", {
+  expect_true(inherits(compute_triad_probability, "function")) 
+})
+```
+
+# mutate_triad_occurence_per_song
+    
+```{r development-mutate_triad_occurence_per_song}
+# You can prepare the code of the mutate_triad_occurence_per_song() function here
+```
+  
+```{r function-mutate_triad_occurence_per_song}
+#' Compute Triad Probability (within a song)
+#' 
+#' Triad occurence within a song based on the probability of having n distinct triads within a song.
+#' 
+#' @param interval_occurence a tibble as returned by \code{compute_triad_probability}
+#' @param songs a tibble of songs with at least a column `ISRC` and `triad`.
+#' @param nb_fake_song 
+#'
+#' @return \code{mutate_triad_occurence_per_song} returns a tibble triad_occurence
+#' 
+#' @noRd
+mutate_triad_occurence_per_song <- function(interval_occurence, songs, nb_fake_song = 5e4L) {
+  nb_distinct_triad <- songs %>% 
+    dplyr::group_by(ISRC) %>% 
+    dplyr::summarise(Nb_triad = length(unique(triad))) %>% 
+    dplyr::count(Nb_triad) %>% 
+    # dplyr::filter(Nb_triad > 5) %>%
+    dplyr::mutate(weight = n / sum(n))
+  
+  known_distinct_triads <- interval_occurence %>% 
+    dplyr::filter(triad %in% songs[["triad"]])
+  
+  fake_nb_triad <- sample(
+    x = nb_distinct_triad[["Nb_triad"]],
+    size = nb_fake_song, replace = TRUE,
+    prob = nb_distinct_triad[["weight"]]
+  )
+  fake_songs <- purrr::map(
+    .x = fake_nb_triad,
+    .f = ~ sample(
+      x = known_distinct_triads[["triad"]],
+      size = .x, replace = FALSE,
+      prob = known_distinct_triads[["frequency"]]
+    )
+  )
+  
+  triad_occurence <- known_distinct_triads %>% 
+    dplyr::mutate(
+      frequency_song = purrr::map_dbl(
+        .x = triad,
+        .f = ~ sum(purrr::map_lgl(
+          .x = fake_songs,
+          .f = function(x) {.x %in% x}
+        ))
+      )
+    ) %>% 
+    dplyr::group_by(frequency) %>% 
+    dplyr::mutate(frequency_song = mean(frequency_song)) %>% 
+    dplyr::ungroup() %>% 
+    dplyr::mutate(frequency_song = frequency_song * sum(frequency) / sum(frequency_song))
+  
+  # triad_occurence %>% 
+  #   ggplot2::ggplot() +
+  #   ggplot2::aes(frequency, frequency_song) +
+  #   ggplot2::geom_abline(slope = 1, intercept = 0) +
+  #   ggplot2::geom_point() +
+  #   ggplot2::theme_bw()
+  
+  triad_occurence <- triad_occurence %>% 
+    dplyr::mutate(frequency = frequency_song) %>% 
+    dplyr::select(-frequency_song)
+  return(triad_occurence)
+}
+```
+  
+```{r example-mutate_triad_occurence_per_song}
+stat_interval <- compute_interval_probability(nb_interval = 3)
+interval_occurence <- compute_triad_probability(stat_interval)
+songs <- tibble::tibble(
+  ISRC = sample(LETTERS, size = 15L),
+  triad = sample(x = unique(interval_occurence[["triad"]]),
+                 size = 15L, replace = TRUE)
+)
+triad_occurence <- mutate_triad_occurence_per_song(
+  interval_occurence = interval_occurence,
+  songs = songs,
+  nb_fake_song = 5L
+)
+```
+  
+```{r tests-mutate_triad_occurence_per_song}
+test_that("mutate_triad_occurence_per_song works", {
+  expect_true(inherits(mutate_triad_occurence_per_song, "function")) 
+})
+```  
+
+# compute_triad_weight
+    
+```{r development-compute_triad_weight}
+# You can prepare the code of the compute_triad_weight() function here
+```
+  
+```{r function-compute_triad_weight}
+#' Compute Triad Weight
+#' 
+#' \code{compute_triad_weight} compares the triad occurrences in the songs data
+#' with expected occurrences based on elementary interval probabilities.
+#' @param songs a tibble of songs with at least a column `ISRC` and `triad`.
+#' @param triad_occurence a tibble as returned by \code{mutate_triad_occurence_per_song}.
+#'
+#' @return \code{compute_triad_weight} returns a tibble with a column `weight_triad`.
+#' @details If a triad is less frequent than expected, the triad weight is equal to 1. If the triad is more frequent than expected, the closer to zero is the weight.
+#' 
+#' @noRd
+compute_triad_weight <- function(songs, triad_occurence) {
+  ## Old : moins direct et pb d'arrondi numerique
+  # w_triad <- songs %>% 
+  #   dplyr::group_by(triad) %>% 
+  #   dplyr::summarise(Nb_Song = length(unique(ISRC))) %>%
+  #   dplyr::mutate(raw_prop_triad = Nb_Song / sum(Nb_Song)) %>% 
+  #   dplyr::left_join(dplyr::select(interval_occurence, triad, frequency),
+  #                    by = dplyr::join_by(triad)) %>% 
+  #   dplyr::mutate(
+  #     frequency = frequency / sum(frequency),
+  #     prop_triad = dplyr::case_when(
+  #       raw_prop_triad > frequency ~ frequency,
+  #       TRUE ~ raw_prop_triad),
+  #     prop_triad = prop_triad /sum(prop_triad)
+  #   ) %>% 
+  #   dplyr::mutate(weight_triad = prop_triad / raw_prop_triad,
+  #                 weight_triad = weight_triad / max(weight_triad))
+  
+  w_triad <- songs %>% 
+    dplyr::group_by(triad) %>% 
+    dplyr::summarise(Nb_Song = length(unique(ISRC))) %>%
+    dplyr::mutate(raw_prop_triad = Nb_Song / sum(Nb_Song)) %>% 
+    dplyr::left_join(dplyr::select(triad_occurence, triad, frequency),
+                     by = dplyr::join_by(triad)) %>% 
+    dplyr::mutate(
+      frequency = frequency / sum(frequency),
+      prop_triad = dplyr::case_when(
+        raw_prop_triad > frequency ~ frequency,
+        TRUE ~ raw_prop_triad),
+      prop_triad = prop_triad /sum(prop_triad),
+      weight_triad = 1 - (dplyr::case_when(
+        raw_prop_triad - frequency > 0 ~ raw_prop_triad - frequency,
+        TRUE ~ 0) / raw_prop_triad)
+    )
+  # identical(w_triad, w_triadNew)
+  # waldo::compare(w_triad, w_triadNew)
+  return(w_triad)
+}
+```
+  
+```{r example-compute_triad_weight}
+stat_interval <- compute_interval_probability(nb_interval = 3)
+interval_occurence <- compute_triad_probability(stat_interval)
+songs <- tibble::tibble(
+  ISRC = sample(LETTERS, size = 15L),
+  triad = sample(x = unique(interval_occurence[["triad"]]),
+                 size = 15L, replace = TRUE)
+)
+triad_occurence <- mutate_triad_occurence_per_song(
+  interval_occurence = interval_occurence,
+  songs = songs,
+  nb_fake_song = 5L
+)
+w_triad <- compute_triad_weight(
+  songs = songs,
+  triad_occurence = triad_occurence
+)
+```
+  
+```{r tests-compute_triad_weight}
+test_that("compute_triad_weight works", {
+  expect_true(inherits(compute_triad_weight, "function")) 
+})
+```
+
+# apply_triad_weight
+    
+```{r development-apply_triad_weight}
+# You can prepare the code of the apply_triad_weight() function here
+```
+  
+```{r function-apply_triad_weight}
+#' Apply Triad Weight
+#' 
+#' Apply triad weight to songs. In case a song contains different triads, the maximum weight is kept.
+#' @param songs a tibble of songs
+#' @param w_triad 
+#' @param regions 
+#' @param group_year 
+#'
+#' @return \code{apply_triad_weight} returns a tibble
+#' 
+#' @noRd
+apply_triad_weight <- function(songs, w_triad, regions, group_year = 1L) {
+  time_space_triad0 <- songs %>% 
+    ## Triad Weight
+    dplyr::left_join(
+      dplyr::select(w_triad, triad, weight_triad),
+      by = dplyr::join_by(triad)
+    ) %>%
+    ## Years Group
+    dplyr::mutate(Year_Group = floor(Album_Year / group_year) * group_year) %>% 
+    ## Add Countries
+    dplyr::inner_join(regions, by = dplyr::join_by(Artist)) %>%
+    dplyr::mutate(Region = strsplit(Region, split = ", ")) %>%
+    tidyr::unnest(Region) %>%
+    ## Group Countries
+    group_countries(Region) %>% 
+    dplyr::group_by(ISRC, Region_Group, Year_Group) %>%
+    dplyr::summarise(weight_triad = max(weight_triad),
+                     .groups = "drop") %>% 
+    ## Share a song between countries
+    dplyr::group_by(ISRC, Year_Group) %>% 
+    dplyr::mutate(weight_triad = weight_triad / dplyr::n(),
+                  raw_triad = 1 / dplyr::n()) %>% 
+    dplyr::ungroup() %>% 
+    ## For a Year-Country, if all triad weights are very low, remove them
+    dplyr::group_by(Year_Group, Region_Group) %>% 
+    dplyr::mutate(
+      all_low_triad_weights = all(weight_triad < 0.1),
+      weight_triad = dplyr::if_else(all_low_triad_weights,
+                                    raw_triad, 
+                                    weight_triad)
+    ) %>% 
+    dplyr::select(-all_low_triad_weights) %>% 
+    dplyr::ungroup()
+  return(time_space_triad0)
+}
+```
+  
+```{r example-apply_triad_weight}
+# time_space_triad0 <- apply_triad_weight(
+#   songs = songs,
+#   w_triad = w_triad,
+#   regions = regions
+# )
+```
+  
+```{r tests-apply_triad_weight}
+test_that("apply_triad_weight works", {
+  expect_true(inherits(apply_triad_weight, "function")) 
+})
+```
+
+# compute_time_space_weight
+    
+```{r development-compute_time_space_weight}
+# You can prepare the code of the compute_time_space_weight() function here
+```
+  
+```{r function-compute_time_space_weight}
+#' Compute Time & Space Weight
+#' 
+#' Description
+#' 
+#' @param time_space_triad0 a tibble with triad weight for each song-country-year.
+#' @param population a tibble population per year and country
+#'
+#' @return \code{compute_time_space_weight} returns a tibble \code{w_triad2}
+#' 
+#' @noRd
+compute_time_space_weight <- function(time_space_triad0, population) {
+  time_space_triad <- time_space_triad0 %>% 
+    dplyr::group_by(Region_Group, Year_Group) %>% 
+    dplyr::summarise(weighted_triad = sum(weight_triad),
+                     raw_triad = sum(raw_triad),
+                     .groups = "drop") %>% 
+    dplyr::mutate(weighted_prop_triad = weighted_triad / sum(weighted_triad),
+                  raw_prop_triad = raw_triad / sum(raw_triad))
+  
+  w_triad2 <- population %>%
+    dplyr::left_join(time_space_triad,
+                     by = dplyr::join_by(Year_Group,
+                                         Region_Group)) %>%
+    # dplyr::filter(!is.na(weighted_prop_triad)) %>%
+    dplyr::mutate(
+      dplyr::across(.cols = c(weighted_triad, raw_triad,
+                              weighted_prop_triad, raw_prop_triad),
+                    .fns = ~ dplyr::if_else(is.na(.), 0, .))) %>% 
+    ## Renormalisation
+    dplyr::mutate(weight_year_country = weight_year_country / sum(weight_year_country),
+                  weighted_prop_triad = weighted_prop_triad / sum(weighted_prop_triad),
+                  raw_prop_triad = raw_prop_triad / sum(raw_prop_triad)) %>% 
+    dplyr::select(-c(estimated_population, Accurate))
+  return(w_triad2)
+}
+```
+  
+```{r example-compute_time_space_weight}
+compute_time_space_weight()
+```
+  
+```{r tests-compute_time_space_weight}
+test_that("compute_time_space_weight works", {
+  expect_true(inherits(compute_time_space_weight, "function")) 
+})
+```
+  
+# apply_time_space_weight
+    
+```{r development-apply_time_space_weight}
+# You can prepare the code of the apply_time_space_weight() function here
+```
+  
+```{r function-apply_time_space_weight}
+#' Apply Time & Space Weight
+#' 
+#' Apply a Time & Space group weight to individual songs.
+#' @param w_triad2 
+#' @param time_space_triad0 
+#'
+#' @return \code{apply_time_space_weight} returns a tibble with two columns ISRC and weighted_year_country
+#' 
+#' @noRd
+apply_time_space_weight <- function(w_triad2, time_space_triad0) {
+  w_time_space <- w_triad2 %>% 
+    ## Restrict a Year-Country group based on its expected proportion in the dataset
+    dplyr::filter(weighted_prop_triad > 0) %>% 
+    dplyr::mutate(weighted_year_country = dplyr::if_else(weighted_prop_triad > weight_year_country,
+                                                         weight_year_country,
+                                                         weighted_prop_triad) / weighted_prop_triad) %>%
+    # dplyr::mutate(weighted_year_country = weighted_year_country / sum(weighted_year_country)) %>%
+    dplyr::select(Region_Group, Year_Group, weighted_year_country)
+  
+  w_time_space2 <- time_space_triad0 %>% 
+    dplyr::left_join(w_time_space, by = dplyr::join_by(Region_Group, Year_Group)) %>% 
+    ## Cancel Triad Weight
+    dplyr::mutate(weighted_year_country = weighted_year_country * raw_triad / weight_triad) %>% 
+    ## Aggregate Countries for Multi-Coutries Songs
+    dplyr::group_by(ISRC) %>% 
+    dplyr::summarise(weighted_year_country = mean(weighted_year_country)) %>% # sum
+    ## Set Max Weight to 1 = 1 song
+    dplyr::mutate(weighted_year_country = weighted_year_country / max(weighted_year_country))
+  return(w_time_space2)
+}
+```
+  
+```{r example-apply_time_space_weight}
+apply_time_space_weight()
+```
+  
+```{r tests-apply_time_space_weight}
+test_that("apply_time_space_weight works", {
+  expect_true(inherits(apply_time_space_weight, "function")) 
+})
+```
+  
+
+# bias_correction_triad
+
+Over 100 millions songs exist and approximately 100,000 are released every single day. Given our cultural background, we are more familiar with western music from the 60's up until year 2010.
+As a consequence, we are well aware that our dataset is heavily biased in both Time & Space. Furthermore, as we started with a single playlist to log "Vanessa Carlton" triad songs, putting all our efforts into it for a year or so, the dataset is not likely to be balanced from a triad to another. For all these reasons, we implemented the following bias correction approach.
+Unfortunately, we did not have the patience to keep up a control sample playlist of songs that we listened to and didn't contain any triad in them. 
+
+**Triad bias**
+
+The first issue we need to address is the balance between triads. We need to assume for a moment that the occurence of a triad in a piece of music is the combined probability of occurence of the first and second interval. Let's pretend that the Vanessa Carlton is not a LOT more in used than other similar triads. The occurence of the intervals between two notes in western music is documented.
+
+The first assumption that we make is that the total song dataset is representative of all songs in Time and Space
+
+**Time Bias**
+
+**Space Bias**
+
+```{r development-bias_correction_triad}
+# Prepare the code of your function here
+songs <- readRDS("songs.RDS")
+
+stat_interval <- compute_interval_probability(prob_alien = 0.15)
+plot(stat_interval)
+
+interval_occurence <- compute_triad_probability(stat_interval)
+ggplot2::ggplot() +
+  ggplot2::aes(interval_first, interval_second) +
+  ggplot2::geom_raster(data = interval_occurence, ggplot2::aes(fill = frequency)) +
+  # ggplot2::geom_raster(data = dplyr::filter(interval_occurence,
+  #                                           frequency > max(dplyr::inner_join(interval_occurence,
+  #                                                                             dplyr::distinct(songs, triad),
+  #                                                                             by = dplyr::join_by(triad))[["frequency"]])),
+  #                      fill = "black") +
+  ggplot2::geom_tile(data = dplyr::filter(interval_occurence, triad %in% songs[["triad"]]),
+                     fill = NA, colour = "white") +
+  ggplot2::theme_bw() +
+  scale_fill_tvc_c()
+
+## triad occurence within a song based on the probability of having n distinct triads within a song
+triad_occurence <- mutate_triad_occurence_per_song(
+  interval_occurence = interval_occurence,
+  songs = songs,
+  nb_fake_song = 5e4L
+)
+
+w_triad <- compute_triad_weight(songs = songs, triad_occurence = triad_occurence)
+
+w_triad %>% 
+  ggplot2::ggplot() +
+  ggplot2::aes(frequency, raw_prop_triad) +
+  ggplot2::geom_point(ggplot2::aes(fill = weight_triad), shape = 21, size =4) +
+  # ggplot2::lims(x = 0:1, y = 0:1) +
+  scale_fill_tvc_c(direction = -1) +
+  ggplot2::labs(x = "Expected proportion among songs",
+                y = "Actual proportion in playlist") +
+  ggplot2::theme_bw() +
+  ggplot2::geom_abline(slope = 1, intercept = 0) +
+  ggplot2::geom_text(ggplot2::aes(label = triad), nudge_y = .02)
+ggplot2::ggsave(glue::glue("../{format(Sys.Date(), format = '%Y%m%d')}-bias-triad-v3.png"), height = 5.7, width = 9.20)
+
+#### Influence of Triad Bias on Time Bias ####
+time_triad <- songs %>% 
+  ## Triad Weight
+  dplyr::left_join(
+    dplyr::select(w_triad, triad, weight_triad),
+    by = dplyr::join_by(triad)
+  ) %>%
+  # dplyr::filter(dplyr::between(Album_Year, 2012, 2014)) %>% 
+  dplyr::group_by(ISRC, Album_Year) %>% 
+  dplyr::summarise(weight_triad = max(weight_triad), # tried Median
+                   .groups = "drop") %>% 
+  dplyr::group_by(Album_Year) %>% 
+  dplyr::summarise(weighted_triad = sum(weight_triad),
+                   raw_triad = length(unique(ISRC)),
+                   .groups = "drop") %>% 
+  dplyr::mutate(weighted_prop_triad = weighted_triad / sum(weighted_triad),
+                raw_prop_triad = raw_triad / sum(raw_triad))
+
+time_triad %>% 
+  tidyr::pivot_longer(cols = c(weighted_triad, raw_triad)) %>%
+  dplyr::filter(Album_Year > 1940) %>% 
+  ggplot2::ggplot() +
+  ggplot2::aes(Album_Year, value, fill = name) +
+  ggplot2::geom_col(position = "dodge") +
+  scale_fill_tvc_d(direction = -1) +
+  ggplot2::theme_bw()
+
+#### Influence of Triad Bias on Space Bias ####
+
+world <- ggplot2::map_data("world") %>%
+  group_countries(region) %>% 
+  dplyr::mutate(region = Region_Group) %>% 
+  dplyr::filter(region != "Antarctica") %>%
+  ggplot2::fortify()
+
+
+regions <- readRDS("C:/Users/NZ5428/Documents/GitHub/tvc/regions.RDS") %>% 
+# regions <- googlesheets4::read_sheet(ss = get_config("google")$base_url, sheet = "Regions") %>%
+  dplyr::filter(!is.na(Region))
+
+region_triad <- songs %>%
+  ## Triad Weight
+  dplyr::left_join(
+    dplyr::select(w_triad, triad, weight_triad),
+    by = dplyr::join_by(triad)
+  ) %>%
+  ## Add Countries
+  dplyr::inner_join(regions, by = dplyr::join_by(Artist)) %>%
+  dplyr::mutate(Region = strsplit(Region, split = ", ")) %>%
+  tidyr::unnest(Region) %>%
+  ## Group Countries
+  group_countries(Region) %>% 
+  dplyr::group_by(ISRC, Region_Group) %>%
+  dplyr::summarise(weight_triad = max(weight_triad),
+                   .groups = "drop") %>% 
+  ## Share a song between countries
+  dplyr::group_by(ISRC) %>% 
+  dplyr::mutate(weight_triad = weight_triad / dplyr::n(),
+                .groups = "drop") %>% 
+  ## Stat by Country
+  dplyr::group_by(Region_Group) %>% 
+  dplyr::summarise(weighted_triad = sum(weight_triad),
+                   raw_triad = length(unique(ISRC)),
+                   .groups = "drop") %>% 
+  dplyr::mutate(weighted_prop_triad = weighted_triad / sum(weighted_triad),
+                raw_prop_triad = raw_triad / sum(raw_triad))
+
+ggplot2::ggplot() +
+  ggplot2::geom_map(data = world,
+                    map = world,
+                    ggplot2::aes(map_id = Region_Group),
+                    fill = tvc:::tvc_corp_palette()[2], colour = "grey30", size=0.2) +
+  ggplot2::geom_map(data = dplyr::mutate(region_triad, ratio = (raw_triad - weighted_triad)),
+                    map = world, colour = "grey30", size=0.2,
+                    ggplot2::aes(fill = ratio, map_id = Region_Group)) +
+  ggplot2::coord_map("rectangular", lat0=0, xlim=c(-180,180), ylim=c(-60, 90)) +
+  scale_fill_tvc_c() +
+  ggplot2::scale_y_continuous(breaks=c()) +
+  ggplot2::scale_x_continuous(breaks=c()) +
+  ggplot2::labs(fill = "Country\nBias") +
+  ggplot2::theme_bw()
+
+#### Time & Space ####
+group_year = 1L
+population <- compute_population_estimates(update = FALSE, group_year = group_year)
+
+# dplyr::anti_join(population, region_triad, by = c("country" = "region"))
+dplyr::anti_join(region_triad, population, by = c("Region_Group"))
+
+time_space_triad0 <- apply_triad_weight(
+  songs = songs,
+  w_triad = w_triad,
+  regions = regions,
+  group_year = group_year
+)
+
+time_space_triad0 %>% 
+  dplyr::filter(Region_Group == "China", Year_Group == 2013) %>% 
+  dplyr::left_join(dplyr::select(dplyr::distinct(songs, ISRC, Song, .keep_all = TRUE),
+                                 ISRC, Song, Artist), 
+                   by = dplyr::join_by(ISRC))
+
+w_triad2 <- compute_time_space_weight(
+  time_space_triad0 = time_space_triad0,
+  population = population
+)
+
+#### Plot Time & Space bias ####
+# crop_x <- 0.0025
+# crop_y <- 0.0025
+crop_x <- 1
+crop_y <- 1
+w_triad2 %>% 
+  dplyr::mutate(Region_Group = dplyr::if_else(is.na(Region_Group) | Region_Group %in% c("USA", "China", "India", "UK", "France"),
+                                        Region_Group, "Others")) %>% 
+  dplyr::filter(weight_year_country <= crop_x,
+                weighted_prop_triad <= crop_y) %>% 
+  ggplot2::ggplot() +
+  ggplot2::aes(weight_year_country, weighted_prop_triad) +
+  ggplot2::geom_point(ggplot2::aes(fill = Region_Group), shape = 21, size =4) +
+  # scale_fill_tvc_c(direction = -1) +
+  ggplot2::labs(x = "Expected proportion of country and year (based on population)",
+                y = "Actual proportion of songs (triad bias compensated)") +
+  ggplot2::theme_bw() +
+  ggplot2::geom_abline(slope = 1, intercept = 0) +
+  ggplot2::geom_text(
+    data = dplyr::filter(
+      w_triad2,
+      weight_year_country * weighted_prop_triad > 0.0015 * 0.0015,
+      weight_year_country <= crop_x,
+      weighted_prop_triad <= crop_y
+    ),
+    ggplot2::aes(label = Year_Group),
+    nudge_y = .00035 * group_year, size = 3)
+ggplot2::ggsave(glue::glue("../{format(Sys.Date(), format = '%Y%m%d')}-triad-weighted-bias-{group_year}year-country.png"),
+                height = 7, width = 9)
+
+w_triad2 %>% 
+  dplyr::mutate(Region_Group = dplyr::if_else(is.na(Region_Group) | Region_Group %in% c("USA", "China", "India", "UK", "France"),
+                                        Region_Group, "Others")) %>% 
+  ggplot2::ggplot() +
+  ggplot2::aes(weight_year_country, raw_prop_triad) +
+  ggplot2::geom_point(ggplot2::aes(fill = Region_Group), shape = 21, size =4) +
+  # ggplot2::lims(x = 0:1, y = 0:1) +
+  # scale_fill_tvc_c(direction = -1) +
+  ggplot2::labs(x = "Expected proportion of country and year (based on population)",
+                y = "Actual proportion of songs (triad bias not compensated)") +
+  ggplot2::theme_bw() +
+  ggplot2::geom_abline(slope = 1, intercept = 0) +
+  ggplot2::geom_text(data = dplyr::filter(w_triad2, weight_year_country * raw_prop_triad > 0.002 * 0.002),
+                     ggplot2::aes(label = Year_Group), nudge_y = .00035 * group_year, size = 3)
+ggplot2::ggsave(glue::glue("../{format(Sys.Date(), format = '%Y%m%d')}-raw-bias-{group_year}year-country.png"),
+                height = 7, width = 9)
+
+#### Apply Weights ####
+
+w_time_space2 <- apply_time_space_weight(
+  w_triad2 = w_triad2,
+  time_space_triad0 = time_space_triad0
+)
+
+# → On 2026-01-21, 585 songs are worth 30.4 because of Triad, Space and Time bias.
+# → On 2026-01-21, 623 songs are worth 31 because of Triad, Space and Time bias.
+# → On 2026-01-22, 658 songs are worth 31.1 because of Triad, Space and Time bias.
+# → On 2026-01-25, 680 songs are worth 48.9 because of Triad, Space and Time bias.
+# → On 2026-01-26, 716 songs are worth 48.4 because of Triad, Space and Time bias.
+# → On 2026-01-28, 739 songs are worth 44.7 because of Triad, Space and Time bias.
+# → On 2026-01-28, 739 songs are worth 58.1 because of Triad, Space and Time bias. remove lonesome low triad weight for Country-Year group
+# → On 2026-01-28, 761 songs are worth 61.3 because of Triad, Space and Time bias.
+# → On 2026-01-30, 796 songs are worth 69.4 because of Triad, Space and Time bias.
+cli::cli_alert(glue::glue(
+  "On ",
+  format(Sys.Date(), format = '%Y-%m-%d'), ", ",
+  nrow(w_time_space2),
+  " songs are worth ",
+  round(sum(w_time_space2[["weighted_year_country"]]), digits = 1),
+  " because of Triad, Space and Time bias."
+  ))
+
+# USA : 1953, 1959
+time_space_triad0 %>%
+  # dplyr::filter(Region_Group == "Scandinavia") %>%
+  # dplyr::filter(ISRC %in% c("DEF058603180", "GBCPA2301914", "QZVM32200452", "NOHDE0060812")) %>%
+  dplyr::filter(ISRC %in% c("TWA459547907")) %>%
+  dplyr::left_join(w_time_space, by = dplyr::join_by(Region_Group, Year_Group)) %>%
+  ## Cancel Triad Weight
+  dplyr::mutate(out = weighted_year_country * raw_triad / weight_triad) %>%
+  ## Aggregate Countries for Multi-Coutries Songs
+  dplyr::group_by(ISRC) %>%
+  dplyr::summarise(weighted_year_country = sum(weighted_year_country))
+
+plot(w_time_space2$weighted_year_country)
+time_space_triad0 %>%
+  dplyr::filter(ISRC %in% c("TWA459547907")) %>%
+  # dplyr::filter(Region_Group == "Scandinavia") %>%
+  # dplyr::filter(ISRC %in% c("DEF058603180", "GBCPA2301914", "QZVM32200452", "NOHDE0060812")) %>%
+  dplyr::left_join(w_time_space, by = dplyr::join_by(Region_Group, Year_Group)) %>%
+  ## Cancel Triad Weight
+  dplyr::mutate(out = weighted_year_country * raw_triad / weight_triad) %>%
+  dplyr::inner_join(dplyr::filter(w_time_space2, weighted_year_country > 0.6),
+                    by = dplyr::join_by(ISRC))
+
+```
+
+```{r function-bias_correction_triad}
+#' Bias Correction Triad
+#'
+#' @param songs a tibble of songs.
+#'
+#' @return \code{bias_correction_triad} returns a tibble, with time and space weights for each song, taking into account triad weight.
+#' @export
+#'
+#' @examples
+bias_correction_triad <- function(songs, regions, group_year = 1L, verbose = TRUE) {
+  stat_interval <- compute_interval_probability(prob_alien = 0.15)
+  
+  interval_occurence <- compute_triad_probability(stat_interval)
+  
+  ## triad occurence within a song based on the probability of having n distinct triads within a song
+  triad_occurence <- mutate_triad_occurence_per_song(
+    interval_occurence = interval_occurence,
+    songs = songs,
+    nb_fake_song = 5e4L
+  )
+  
+  w_triad <- compute_triad_weight(
+    songs = songs,
+    triad_occurence = triad_occurence
+  )
+  
+  population <- compute_population_estimates(update = FALSE, group_year = group_year)
+  
+  time_space_triad0 <- apply_triad_weight(
+    songs = songs,
+    w_triad = w_triad,
+    regions = regions,
+    group_year = group_year
+  )
+  
+  w_triad2 <-compute_time_space_weight(
+    time_space_triad0 = time_space_triad0,
+    population = population
+  )
+  
+  if(verbose) {
+    ## Biggest non-representated Year-Country groups
+    message("Biggest non-representated Year-Country groups:")
+    w_triad2 %>% 
+      dplyr::filter(weighted_prop_triad == 0) %>% 
+      dplyr::filter(Year_Group > 1940) %>% 
+      dplyr::arrange(dplyr::desc(weight_year_country)) %>% 
+      dplyr::slice_head(n = 10L) %>% 
+      dplyr::select(Region_Group, Year_Group, weight_year_country) %>% 
+      as.data.frame() %>% 
+      print()
+  }
+  
+  w_time_space2 <- apply_time_space_weight(
+    w_triad2 = w_triad2,
+    time_space_triad0 = time_space_triad0
+  )
+  
+  ## Most representative and least representative songs
+  if(verbose) {
+    message("Most representative and least representative songs")
+    w_time_space2 %>% 
+      dplyr::arrange(dplyr::desc(weighted_year_country)) %>% 
+      dplyr::left_join(songs, by = dplyr::join_by(ISRC)) %>% 
+      dplyr::filter(
+        !dplyr::between(weighted_year_country,
+                        left = quantile(weighted_year_country, probs = .01),
+                        right = quantile(weighted_year_country, probs = .99))
+      ) %>%
+      dplyr::select(ISRC, Song, Artist, Album_Year, triad, weighted_year_country) %>% 
+      dplyr::distinct(ISRC, Song, Album_Year, triad, weighted_year_country, .keep_all = TRUE) %>% 
+      dplyr::select(-ISRC) %>% 
+      print()
+  }
+  
+  if(rlang::has_name(x = songs, name = "weighted_year_country")) {
+    ## Remove pre-existing column weighted_year_country
+    songs <- songs %>% 
+      dplyr::select(-weighted_year_country)
+  }
+  
+  songs <- songs %>% 
+    dplyr::left_join(w_time_space2, by = dplyr::join_by(ISRC)) %>%
+    dplyr::mutate(
+      weighted_year_country = dplyr::if_else(is.na(weighted_year_country),
+                                             1,
+                                             weighted_year_country)
+    )
+  return(songs)
+}
+```
+
+```{r examples-bias_correction_triad}
+w_time_space2 <- bias_correction_triad(songs, regions, group_year = 1L)
+```
+
+```{r tests-bias_correction_triad}
+test_that("bias_correction_triad works", {
+  expect_true(inherits(bias_correction_triad, "function"))
+})
+```
+
+
+```{r development-inflate, eval=FALSE}
+# Run but keep eval=FALSE to avoid infinite loop
+# Execute in the console directly
+fusen::inflate(flat_file = "dev/flat_bias_correction_triad.Rmd", vignette_name = "Bias Correction")
+```
+

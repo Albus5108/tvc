@@ -4,10 +4,12 @@
 \alias{plot_tvc_histogram}
 \title{Plot Occurences Histogram}
 \usage{
-plot_tvc_histogram(songs)
+plot_tvc_histogram(songs, triadType = "1 7", group_year = 1L, weighted = TRUE)
 }
 \arguments{
 \item{songs}{a tibble with at least a column \code{Album_Year}, \code{Song} and \code{ISRC}.}
+
+\item{triadType}{a character string specifying the triad.}
 }
 \value{
 \code{plot_tvc_histogram} returns a plot

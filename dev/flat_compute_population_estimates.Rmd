@@ -1,0 +1,214 @@
+---
+title: "flat_compute_population_estimates.Rmd empty"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r development, include=FALSE}
+library(testthat)
+```
+
+```{r development-load}
+# Load already included functions if relevant
+pkgload::load_all(export_all = FALSE)
+```
+
+# estimate_population_by_country_year
+    
+```{r development-estimate_population_by_country_year}
+# You can prepare the code of the estimate_population_by_country_year() function here
+```
+  
+```{r function-estimate_population_by_country_year}
+#' Title
+#' 
+#' Description
+#' 
+#' @return \code{estimate_population_by_country_year} returns population estimates per year and country.
+#' 
+#' @noRd
+#' @importFrom dplyr mutate case_match rows_upsert rename group_by if_else ungroup select contains summarise_all
+#' @importFrom tibble tibble
+#' @importFrom tidyr expand_grid
+estimate_population_by_country_year <- function(countries_df, years_df, clean_countries, group_year = 1) {
+  years_df_interpolated <- tibble::tibble(
+    year = min(years_df[["year"]]):max(years_df[["year"]]),
+    world_population = approx(x = years_df[["year"]],
+                              y = years_df[["world_population"]], xout = year)$y
+  )
+  countries_df %>%
+    dplyr::mutate(
+      country = dplyr::case_match(country,
+                                  "United States" ~ "USA",
+                                  "United Kingdom" ~ "UK",
+                                  .default = country)
+    ) %>%
+    dplyr::mutate(x2025_world_population = sum(x2025_population)) %>%
+    tidyr::expand_grid(years_df_interpolated) %>%
+    dplyr::mutate(
+      estimated_population = world_population * x2025_population / x2025_world_population,
+    ) %>%
+    dplyr::mutate(Accurate = FALSE) %>%
+    dplyr::rows_upsert(dplyr::rename(clean_countries,
+                                     estimated_population = Population),
+                       by = c("country", "year")) %>%
+    ## Correction on inaccurate data
+    dplyr::group_by(year) %>%
+    dplyr::mutate(
+      estimated_population = dplyr::if_else(
+        Accurate,
+        estimated_population,
+        false = estimated_population * (world_population - sum(estimated_population * Accurate)) / sum(estimated_population * !Accurate)
+      )
+    ) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(
+      weight_year_country = estimated_population / sum(estimated_population) # max(world_population)
+    ) %>%
+    dplyr::select(-c(dplyr::contains("2025"), world_population, percent_change)) %>%
+    ## Year Group
+    dplyr::mutate(Year_Group = floor(year / group_year) * group_year) %>%
+    dplyr::select(-year) %>%
+    ## Group Countries
+    group_countries(country) %>%
+    dplyr::select(-country) %>%
+    ## Sum over Year and Countries
+    dplyr::group_by(Region_Group, Year_Group) %>%
+    dplyr::summarise_all(.funs = sum) %>%
+    dplyr::ungroup()
+}
+```
+  
+```{r example-estimate_population_by_country_year}
+estimate_population_by_country_year()
+```
+  
+```{r tests-estimate_population_by_country_year}
+test_that("estimate_population_by_country_year works", {
+  expect_true(inherits(estimate_population_by_country_year, "function")) 
+})
+```
+
+# compute_population_estimates
+
+```{r development-compute_population_estimates}
+# Prepare the code of your function here
+```
+
+```{r function-compute_population_estimates}
+#' Compute population Estimates
+#' 
+#' Population estimates per year and per country.
+#' @param update a boolean
+#' @param group_year an integer giving the number of year for grouping.
+#'
+#' @return \code{compute_population_estimates} returns a tibble of worldwide population estimates
+#' @export
+#' @importFrom dplyr select mutate filter case_when rename
+#' @importFrom janitor clean_names
+#' @importFrom purrr map
+#' @importFrom readr parse_number read_csv
+#' @importFrom rvest read_html html_elements html_table
+#' @importFrom stringr str_remove
+#' @importFrom tibble tibble
+#' @importFrom tidyr unnest
+#'
+#' @examples
+compute_population_estimates <- function(update = TRUE, group_year = 1L) {
+  if(update) {
+    url <- "https://worldostats.com/country-stats/world-population-by-country/"
+
+    # Scraping des deux tableaux sur la même page
+    tables <- rvest::read_html(url) %>%
+      rvest::html_elements("table") %>%
+      purrr::map(~ rvest::html_table(.x, fill = TRUE))
+
+    raw_countries <- tables[[1]]
+    raw_years     <- tables[[2]]
+
+    # Nettoyage
+    countries <- raw_countries %>%
+      janitor::clean_names() %>%
+      dplyr::select(
+        country, x2025_population, percent_change
+      ) %>%
+      dplyr::mutate(
+        percent_change = readr::parse_number(stringr::str_remove(percent_change, "%")) / 100,
+        x2025_population = readr::parse_number(x2025_population)
+      )
+    
+    years <- raw_years %>%
+      janitor::clean_names() %>%
+      dplyr::mutate(
+        world_population = readr::parse_number(world_population)
+      ) %>%
+      dplyr::filter(year > 1600)
+
+    saveRDS(object = countries, file = "countries.RDS")
+    saveRDS(object = years, file = "years.RDS")
+  } else {
+    countries <- readRDS(file = "countries.RDS")
+    years     <- readRDS(file = "years.RDS")
+  }
+
+  clean_countries <- tibble::tibble(
+    file = list.files(path = system.file(package = "tvc", "extdata"),
+                      full.names = TRUE)
+  ) %>%
+    ## Csv files from https://www.macrotrends.net/datasets/global-metrics/countries/
+    dplyr::mutate(country = dplyr::case_when(
+      grepl("China", file) ~ "China",
+      grepl("France", file) ~ "France",
+      grepl("India", file) ~ "India",
+      grepl("United-States", file) ~ "USA",
+      grepl("United-Kingdom", file) ~ "UK",
+      grepl("Japan", file) ~ "Japan",
+      grepl("Germany", file) ~ "Germany",
+      grepl("Australia", file) ~ "Australia",
+      grepl("Brazil", file) ~ "Brazil",
+      grepl("Russia", file) ~ "Russia",
+      grepl("Sweden", file) ~ "Sweden",
+      grepl("Mexico", file) ~ "Mexico",
+      grepl("Taiwan", file) ~ "Taiwan",
+      TRUE ~ file
+    )) %>%
+    dplyr::mutate(data = purrr::map(file, ~ suppressMessages(readr::read_csv(.x, show_col_types = FALSE)))) %>%
+    tidyr::unnest(data) %>%
+    dplyr::rename(year = `...1`) %>%
+    dplyr::select(-file) %>%
+    dplyr::mutate(Accurate = TRUE)
+  
+  # Estimation
+  estimates <- estimate_population_by_country_year(
+    countries_df = countries,
+    years_df = years,
+    clean_countries = clean_countries,
+    group_year = group_year
+  )
+  return(estimates)
+}
+```
+
+```{r examples-compute_population_estimates}
+population <- compute_population_estimates(update = FALSE)
+# population %>%
+#   ggplot2::ggplot() +
+#   ggplot2::aes(Year_Group, weight_year_country, group = country) +
+#   ggplot2::geom_line()
+```
+
+```{r tests-compute_population_estimates}
+test_that("compute_population_estimates works", {
+  expect_true(inherits(compute_population_estimates, "function"))
+})
+```
+
+
+```{r development-inflate, eval=FALSE}
+# Run but keep eval=FALSE to avoid infinite loop
+# Execute in the console directly
+fusen::inflate(flat_file = "dev/flat_compute_population_estimates.Rmd",
+               vignette_name = "Population Estimates")
+```
+

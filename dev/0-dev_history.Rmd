@@ -121,8 +121,9 @@ fusen::add_flat_template(template = "add", flat_name = "write_missing_triade")
 fusen::add_flat_template(template = "add", flat_name = "write_missing_region")
 fusen::add_flat_template(template = "add", flat_name = "read_sheet_triad")
 fusen::add_flat_template(template = "add", flat_name = "scale_palette_triad")
+fusen::add_flat_template(template = "add", flat_name = "compute_population_estimates")
 
-# perspective : article md, fonction set_config, ajouter globals.R
+# perspective : article md, fonction set_config, correct world population before 1950, declarer font color blacK/white palette
 
 # Inflate all flat files at once
 fusen::inflate_all()

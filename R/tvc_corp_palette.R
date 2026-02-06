@@ -14,10 +14,10 @@ tvc_corp_palette <- function(palette = "main", ...) {
   tvc_corp_palettes <- list(
     `main` = c("#EB5646",  # Rouge vif
                "#FCF1DD",  # Beige clair
-               "black",  # Beige clair
                "#D9A066",  # Ocre dore, pour rechauffer et varier
                "#A3472A",  # Terre cuite foncee, plus rustique
-               "#7B2E2E"),  # Bordeaux profond, pour l’ancrage visuel,
+               "#7B2E2E", # Bordeaux profond, pour l’ancrage visuel,
+               "black"),  # Noir,  
     `gradient` = c("#FCF1DD",  # Beige clair
                    "#D9A066",  # Ocre dore, pour rechauffer et varier
                    "#A3472A",  # Terre cuite foncee, plus rustique

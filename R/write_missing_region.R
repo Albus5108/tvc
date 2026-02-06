@@ -25,6 +25,8 @@ write_missing_region <- function(songs) {
       purrr::map_lgl(genres, .f = ~ "swedish pop" %in% .x) ~ "Sweden",
       purrr::map_lgl(genres, .f = ~ "norwegian pop" %in% .x) ~ "Norway",
       purrr::map_lgl(genres, .f = ~ "k-ballad" %in% .x) ~ "South Korea",
+      purrr::map_lgl(genres, .f = ~ "bollywood" %in% .x) ~ "India",
+      purrr::map_lgl(genres, .f = ~ "motown" %in% .x) ~ "USA",
       TRUE ~ as.character(NA)
     )) %>%
     dplyr::anti_join(regions, by = dplyr::join_by(Artist)) %>%
