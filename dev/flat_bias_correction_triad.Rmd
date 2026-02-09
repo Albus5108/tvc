@@ -492,6 +492,10 @@ apply_time_space_weight <- function(w_triad2, time_space_triad0) {
     # dplyr::mutate(weighted_year_country = weighted_year_country / sum(weighted_year_country)) %>%
     dplyr::select(Region_Group, Year_Group, weighted_year_country)
   
+  # time_space_triad0 %>% 
+  #   dplyr::anti_join(w_time_space, by = dplyr::join_by(Region_Group, Year_Group)) %>% 
+  #   dplyr::left_join(songs)
+  
   w_time_space2 <- time_space_triad0 %>% 
     dplyr::left_join(w_time_space, by = dplyr::join_by(Region_Group, Year_Group)) %>% 
     ## Cancel Triad Weight
@@ -500,7 +504,7 @@ apply_time_space_weight <- function(w_triad2, time_space_triad0) {
     dplyr::group_by(ISRC) %>% 
     dplyr::summarise(weighted_year_country = mean(weighted_year_country)) %>% # sum
     ## Set Max Weight to 1 = 1 song
-    dplyr::mutate(weighted_year_country = weighted_year_country / max(weighted_year_country))
+    dplyr::mutate(weighted_year_country = weighted_year_country / max(weighted_year_country, na.rm = TRUE))
   return(w_time_space2)
 }
 ```
@@ -611,8 +615,8 @@ world <- ggplot2::map_data("world") %>%
   ggplot2::fortify()
 
 
-regions <- readRDS("C:/Users/NZ5428/Documents/GitHub/tvc/regions.RDS") %>% 
-# regions <- googlesheets4::read_sheet(ss = get_config("google")$base_url, sheet = "Regions") %>%
+# regions <- readRDS("C:/Users/NZ5428/Documents/GitHub/tvc/regions.RDS") %>% 
+regions <- googlesheets4::read_sheet(ss = get_config("google")$base_url, sheet = "Regions") %>%
   dplyr::filter(!is.na(Region))
 
 region_triad <- songs %>%
@@ -745,12 +749,14 @@ w_time_space2 <- apply_time_space_weight(
 # → On 2026-01-28, 739 songs are worth 58.1 because of Triad, Space and Time bias. remove lonesome low triad weight for Country-Year group
 # → On 2026-01-28, 761 songs are worth 61.3 because of Triad, Space and Time bias.
 # → On 2026-01-30, 796 songs are worth 69.4 because of Triad, Space and Time bias.
+# → On 2026-02-08, 838 songs are worth 91 because of Triad, Space and Time bias.
+# → On 2026-02-09, 871 songs are worth 39.2 because of Triad, Space and Time bias.
 cli::cli_alert(glue::glue(
   "On ",
   format(Sys.Date(), format = '%Y-%m-%d'), ", ",
   nrow(w_time_space2),
   " songs are worth ",
-  round(sum(w_time_space2[["weighted_year_country"]]), digits = 1),
+  round(sum(w_time_space2[["weighted_year_country"]], na.rm = TRUE), digits = 1),
   " because of Triad, Space and Time bias."
   ))
 
@@ -837,6 +843,12 @@ bias_correction_triad <- function(songs, regions, group_year = 1L, verbose = TRU
     time_space_triad0 = time_space_triad0
   )
   
+  if(rlang::has_name(x = songs, name = "weighted_year_country")) {
+    ## Remove pre-existing column weighted_year_country
+    songs <- songs %>% 
+      dplyr::select(-weighted_year_country)
+  }
+  
   ## Most representative and least representative songs
   if(verbose) {
     message("Most representative and least representative songs")
@@ -845,19 +857,13 @@ bias_correction_triad <- function(songs, regions, group_year = 1L, verbose = TRU
       dplyr::left_join(songs, by = dplyr::join_by(ISRC)) %>% 
       dplyr::filter(
         !dplyr::between(weighted_year_country,
-                        left = quantile(weighted_year_country, probs = .01),
-                        right = quantile(weighted_year_country, probs = .99))
+                        left = quantile(weighted_year_country, na.rm = TRUE, probs = .01),
+                        right = quantile(weighted_year_country, na.rm = TRUE, probs = .99))
       ) %>%
       dplyr::select(ISRC, Song, Artist, Album_Year, triad, weighted_year_country) %>% 
       dplyr::distinct(ISRC, Song, Album_Year, triad, weighted_year_country, .keep_all = TRUE) %>% 
       dplyr::select(-ISRC) %>% 
       print()
-  }
-  
-  if(rlang::has_name(x = songs, name = "weighted_year_country")) {
-    ## Remove pre-existing column weighted_year_country
-    songs <- songs %>% 
-      dplyr::select(-weighted_year_country)
   }
   
   songs <- songs %>% 

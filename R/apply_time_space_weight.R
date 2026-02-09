@@ -21,6 +21,10 @@ apply_time_space_weight <- function(w_triad2, time_space_triad0) {
     # dplyr::mutate(weighted_year_country = weighted_year_country / sum(weighted_year_country)) %>%
     dplyr::select(Region_Group, Year_Group, weighted_year_country)
   
+  # time_space_triad0 %>% 
+  #   dplyr::anti_join(w_time_space, by = dplyr::join_by(Region_Group, Year_Group)) %>% 
+  #   dplyr::left_join(songs)
+  
   w_time_space2 <- time_space_triad0 %>% 
     dplyr::left_join(w_time_space, by = dplyr::join_by(Region_Group, Year_Group)) %>% 
     ## Cancel Triad Weight
@@ -29,6 +33,6 @@ apply_time_space_weight <- function(w_triad2, time_space_triad0) {
     dplyr::group_by(ISRC) %>% 
     dplyr::summarise(weighted_year_country = mean(weighted_year_country)) %>% # sum
     ## Set Max Weight to 1 = 1 song
-    dplyr::mutate(weighted_year_country = weighted_year_country / max(weighted_year_country))
+    dplyr::mutate(weighted_year_country = weighted_year_country / max(weighted_year_country, na.rm = TRUE))
   return(w_time_space2)
 }

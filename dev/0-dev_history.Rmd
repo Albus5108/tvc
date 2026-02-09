@@ -122,8 +122,12 @@ fusen::add_flat_template(template = "add", flat_name = "write_missing_region")
 fusen::add_flat_template(template = "add", flat_name = "read_sheet_triad")
 fusen::add_flat_template(template = "add", flat_name = "scale_palette_triad")
 fusen::add_flat_template(template = "add", flat_name = "compute_population_estimates")
+fusen::add_flat_template(template = "add", flat_name = "bias_correction_triad")
+fusen::add_flat_template(template = "add", flat_name = "triad_coverage")
 
-# perspective : article md, fonction set_config, correct world population before 1950, declarer font color blacK/white palette
+# perspective : article md, fonction set_config, blacK/white palette, correct world population before 1950, declarer font color, plus grand utiliseur / premiers utilisateur d'une triade
+# https://nikkimiller.space/2025/02/09/how-much-music-is-released-every-year/
+# https://docs.google.com/spreadsheets/d/1MKTEJubZbzywzFzIlRrPmDR9n6-v81ICtOWfjYbN9t4/edit?gid=1127574065#gid=1127574065
 
 # Inflate all flat files at once
 fusen::inflate_all()
@@ -133,6 +137,18 @@ cat(stringi::stri_escape_unicode("e"))
 
 # Package structure (add this in a dev/Readme.md file)
 fusen::draw_package_structure()
+
+# Update script globals.R :
+usethis::edit_r_environ() #et supprimer la ligne _R_CHECK_USE_CODETOOLS_=FALSE
+# Supprimer le fichier globals.R (pour mieux le réécrire ensuite)
+checkhelper::print_globals(
+  quiet = TRUE,
+  args = c("--no-manual", "--no-tests", "--no-examples", "--no-vignettes", "--no-build-vignettes")
+)
+# Editer le script globals.R
+styler::style_file("./R/globals.R")
+usethis::edit_r_environ() # et rajouter la ligne _R_CHECK_USE_CODETOOLS_=FALSE
+# Restart R for changes to take effect
 ```
 
 # Share the package

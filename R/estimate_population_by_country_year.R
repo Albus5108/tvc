@@ -22,6 +22,7 @@ estimate_population_by_country_year <- function(countries_df, years_df, clean_co
     dplyr::mutate(
       country = dplyr::case_match(country,
                                   "United States" ~ "USA",
+                                  "DR Congo" ~ "Democratic Republic of the Congo",
                                   "United Kingdom" ~ "UK",
                                   .default = country)
     ) %>%

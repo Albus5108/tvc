@@ -58,6 +58,12 @@ bias_correction_triad <- function(songs, regions, group_year = 1L, verbose = TRU
     time_space_triad0 = time_space_triad0
   )
   
+  if(rlang::has_name(x = songs, name = "weighted_year_country")) {
+    ## Remove pre-existing column weighted_year_country
+    songs <- songs %>% 
+      dplyr::select(-weighted_year_country)
+  }
+  
   ## Most representative and least representative songs
   if(verbose) {
     message("Most representative and least representative songs")
@@ -66,19 +72,13 @@ bias_correction_triad <- function(songs, regions, group_year = 1L, verbose = TRU
       dplyr::left_join(songs, by = dplyr::join_by(ISRC)) %>% 
       dplyr::filter(
         !dplyr::between(weighted_year_country,
-                        left = quantile(weighted_year_country, probs = .01),
-                        right = quantile(weighted_year_country, probs = .99))
+                        left = quantile(weighted_year_country, na.rm = TRUE, probs = .01),
+                        right = quantile(weighted_year_country, na.rm = TRUE, probs = .99))
       ) %>%
       dplyr::select(ISRC, Song, Artist, Album_Year, triad, weighted_year_country) %>% 
       dplyr::distinct(ISRC, Song, Album_Year, triad, weighted_year_country, .keep_all = TRUE) %>% 
       dplyr::select(-ISRC) %>% 
       print()
-  }
-  
-  if(rlang::has_name(x = songs, name = "weighted_year_country")) {
-    ## Remove pre-existing column weighted_year_country
-    songs <- songs %>% 
-      dplyr::select(-weighted_year_country)
   }
   
   songs <- songs %>% 
