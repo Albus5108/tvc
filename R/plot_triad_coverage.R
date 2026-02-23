@@ -12,8 +12,13 @@
 #' triads <- read_sheet_triad()
 #' plot_triad_coverage(triads = triads)
 plot_triad_coverage <- function(triads, weighted = TRUE){
-  dat <- triad_coverage(triads = triads, weighted = weighted) 
-  dat %>%
+  dat <- triad_coverage(triads = triads, weighted = weighted) %>%
+    ## Filter Out Negative Triad etc.
+    dplyr::filter(dplyr::between(First_Interval, as.factor(-2L), as.factor(2L))) %>%
+    # dplyr::filter(dplyr::between(First_Interval, 0L, 2L),
+    #               dplyr::between(Second_Interval, 3L, 11L)) %>%
+    dplyr::filter(!dplyr::between(Second_Interval, as.factor(-4L), as.factor(4L)))
+  dat %>% 
     ggplot2::ggplot() +
     ggplot2::aes(x = First_Interval, y = Second_Interval,
                  fill = Weighted_Nb_Songs,

@@ -12,13 +12,13 @@ globalVariables(unique(c(
   # plot_tvc_histogram:
   "Album_Year", "ISRC", "Song",
   # plot_tvc_network:
-  ".", "Affirmation", "Artist", "conf", "Degree", "from", "Genre", "genres", "Genres", "Group", "Harmonie Sous-Jacente", "id", "Instrument", "ISRC", "ISRC_from", "ISRC_to", "Mode", "Nb_Chansons", "Ordre des Notes", "size", "Song", "to", "track.popularity", "Type", "x", "xend", "y", "yend",
+  ".", "Affirmation", "Artist", "conf", "Degree", "from", "Genre", "genres", "Genres", "Group", "Harmonie Sous-Jacente", "id", "Instrument", "ISRC", "ISRC_from", "ISRC_to", "Mode", "Nb_Chansons", "triad", "size", "Song", "to", "track.popularity", "Type", "x", "xend", "y", "yend",
   # plot_tvc_world:
-  "Artist", "nb_triad", "Ordre des Notes", "region", "Region", "Region_Group",
+  "Artist", "nb_triad", "triad", "region", "Region", "Region_Group",
   # triad_coverage:
-  "First_Interval", "ISRC", "name", "Nb_Songs", "Ordre des Notes", "playlist", "Second_Interval", "Song", "triad", "triad_tmp",
+  "First_Interval", "ISRC", "name", "Nb_Songs", "triad", "playlist", "Second_Interval", "Song", "triad", "triad_tmp",
   # write_missing_region:
   "Artist", "genres",
   # write_missing_triade:
-  "Artist", "ISRC", "Ordre des Notes", "Playlist_Order", "Song", "triad"
+  "Artist", "ISRC", "triad", "Playlist_Order", "Song", "triad"
 )))

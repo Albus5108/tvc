@@ -8,10 +8,12 @@ flat_bias_correction_triad.Rmd:
   - R/compute_interval_probability.R
   - R/compute_time_space_weight.R
   - R/compute_triad_probability.R
+  - R/compute_triad_probability_old.R
   - R/compute_triad_weight.R
   - R/mutate_triad_occurence_per_song.R
   tests:
   - tests/testthat/test-compute_interval_probability.R
+  - tests/testthat/test-compute_triad_probability_old.R
   - tests/testthat/test-compute_triad_probability.R
   - tests/testthat/test-mutate_triad_occurence_per_song.R
   - tests/testthat/test-compute_triad_weight.R
@@ -219,9 +221,11 @@ flat_triad_coverage.Rmd:
   path: dev/flat_triad_coverage.Rmd
   state: active
   R:
+  - R/build_triad_from_config.R
   - R/plot_triad_coverage.R
   - R/triad_coverage.R
   tests:
+  - tests/testthat/test-build_triad_from_config.R
   - tests/testthat/test-triad_coverage.R
   - tests/testthat/test-plot_triad_coverage.R
   vignettes: vignettes/triad-coverage.Rmd

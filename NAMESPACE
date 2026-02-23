@@ -2,6 +2,7 @@
 
 export("%>%")
 export(bias_correction_triad)
+export(build_triad_from_config)
 export(clean_song_title)
 export(compute_population_estimates)
 export(get_playlist_id)

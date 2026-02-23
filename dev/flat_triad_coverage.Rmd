@@ -14,6 +14,45 @@ library(testthat)
 pkgload::load_all(export_all = FALSE)
 ```
 
+# build_triad_from_config
+    
+```{r development-build_triad_from_config}
+# You can prepare the code of the build_triad_from_config() function here
+```
+  
+```{r function-build_triad_from_config}
+#' Get Triad Type Table
+#' 
+#' Read config file and list all triads#' 
+#' @param env a character string
+#'
+#' @return \code{build_triad_from_config} returns a triad table.
+#' 
+#' @export
+build_triad_from_config <- function(env = "spotify"){
+  tabTriads <- get_config(env = env)$playlists %>%
+    purrr::transpose() %>%
+    tibble::as_tibble() %>%
+    tidyr::unnest(cols = c(triad, name, playlist))
+  
+  if(any(duplicated(tabTriads[["playlist"]]))) {
+    cli::cli_abort(message = "Duplicated playlist_id : {tabTriads[['playlist']][duplicated(tabTriads[['playlist']])]}")
+  }
+  
+  return(tabTriads)
+}
+```
+  
+```{r example-build_triad_from_config}
+tabTriads <- build_triad_from_config(env = "spotify")
+```
+  
+```{r tests-build_triad_from_config}
+test_that("build_triad_from_config works", {
+  expect_true(inherits(build_triad_from_config, "function")) 
+})
+```
+
 # triad_coverage
 
 ```{r development-triad_coverage}
@@ -31,10 +70,7 @@ pkgload::load_all(export_all = FALSE)
 #'
 #' @examples
 triad_coverage <- function(triads, weighted = TRUE) {
-  tabTriads <- get_config(env = "spotify")$playlists %>%
-    purrr::transpose() %>%
-    tibble::as_tibble() %>%
-    tidyr::unnest(cols = c(triad, name, playlist))
+  tabTriads <- build_triad_from_config(env = "spotify")
   
   if(weighted) {
     attempt::stop_if_not(rlang::has_name(triads, name = "weighted_year_country"),
@@ -61,10 +97,6 @@ triad_coverage <- function(triads, weighted = TRUE) {
     dplyr::mutate(triad_tmp = triad) %>%
     tidyr::extract(col = triad_tmp, into = c("First_Interval", "Second_Interval"), regex = "^(.*) (.*)$") %>%
     dplyr::mutate(dplyr::across(.cols = c(First_Interval, Second_Interval), .fns = as.integer)) %>%
-    ## Filter Out Negative Triad etc.
-    dplyr::filter(dplyr::between(First_Interval, -2L, 2L)) %>%
-    # dplyr::filter(dplyr::between(First_Interval, 0L, 2L),
-    #               dplyr::between(Second_Interval, 3L, 11L)) %>%
     dplyr::mutate(dplyr::across(.cols = c(First_Interval, Second_Interval), .fns = as.factor)) %>%
     ## Fill empty triad --> Nb songs set to zero
     # dplyr::mutate(dplyr::across(.cols = c(Nb_Songs, Weighted_Nb_Songs),
@@ -102,8 +134,13 @@ test_that("triad_coverage works", {
 #' 
 #' @export
 plot_triad_coverage <- function(triads, weighted = TRUE){
-  dat <- triad_coverage(triads = triads, weighted = weighted) 
-  dat %>%
+  dat <- triad_coverage(triads = triads, weighted = weighted) %>%
+    ## Filter Out Negative Triad etc.
+    dplyr::filter(dplyr::between(First_Interval, as.factor(-2L), as.factor(2L))) %>%
+    # dplyr::filter(dplyr::between(First_Interval, 0L, 2L),
+    #               dplyr::between(Second_Interval, 3L, 11L)) %>%
+    dplyr::filter(!dplyr::between(Second_Interval, as.factor(-4L), as.factor(4L)))
+  dat %>% 
     ggplot2::ggplot() +
     ggplot2::aes(x = First_Interval, y = Second_Interval,
                  fill = Weighted_Nb_Songs,

@@ -33,13 +33,23 @@ stat_interval <- compute_interval_probability()
 
   
 
+# compute_triad_probability_old
+    
+  
+  
+```{r example-compute_triad_probability_old}
+stat_interval <- compute_interval_probability(nb_interval = 3)
+interval_occurence <- compute_triad_probability_old(stat_interval)
+```
+
+  
+
 # compute_triad_probability
     
   
   
 ```{r example-compute_triad_probability}
-stat_interval <- compute_interval_probability(nb_interval = 3)
-interval_occurence <- compute_triad_probability(stat_interval)
+interval_occurence <- compute_triad_probability(nb_interval = 500L, nb_min = 1L, prob_alien = .5)
 ```
 
   

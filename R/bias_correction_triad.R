@@ -10,9 +10,10 @@
 #' @examples
 #' w_time_space2 <- bias_correction_triad(songs, regions, group_year = 1L)
 bias_correction_triad <- function(songs, regions, group_year = 1L, verbose = TRUE) {
-  stat_interval <- compute_interval_probability(prob_alien = 0.15)
+  # stat_interval <- compute_interval_probability(prob_alien = 0.15)
+  # interval_occurence <- compute_triad_probability_old(stat_interval)
   
-  interval_occurence <- compute_triad_probability(stat_interval)
+  interval_occurence <- compute_triad_probability()
   
   ## triad occurence within a song based on the probability of having n distinct triads within a song
   triad_occurence <- mutate_triad_occurence_per_song(
@@ -78,6 +79,8 @@ bias_correction_triad <- function(songs, regions, group_year = 1L, verbose = TRU
       dplyr::select(ISRC, Song, Artist, Album_Year, triad, weighted_year_country) %>% 
       dplyr::distinct(ISRC, Song, Album_Year, triad, weighted_year_country, .keep_all = TRUE) %>% 
       dplyr::select(-ISRC) %>% 
+      dplyr::slice_head(n = 10L) %>% 
+      as.data.frame() %>%
       print()
   }
   

@@ -69,6 +69,8 @@ plot_tvc_histogram <- function(songs, triadType = "1 7", group_year = 1L, weight
     ## songs with triadTypoe vs without triadType
     dplyr::group_by(ISRC) %>% 
     dplyr::mutate(
+       # & !Type %in% c("thème mélodique principal",
+       #                "en passant dans la mélodie", NA)
       triad_type = factor(dplyr::if_else(any(triad %in% triadType),
                                   triadType,
                                   "Others"), levels = c("Others", triadType))

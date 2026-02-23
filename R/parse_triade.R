@@ -66,7 +66,7 @@ parse_triade <- function(data, songs) {
     dplyr::select(-c(Tmp_Majeur, Tmp_Mineur)) %>%
     dplyr::distinct() #%>%
     # dplyr::filter(!is.na(Degree),
-    #               `Ordre des Notes` == "1 7")
+    #               triad == "1 7")
   
   data2$`Harmonie Sous-Jacente` %>% unique()
 

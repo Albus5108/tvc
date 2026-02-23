@@ -23,6 +23,16 @@ library(tvc)
 
 
 
+# build_triad_from_config
+    
+  
+  
+```{r example-build_triad_from_config}
+tabTriads <- build_triad_from_config(env = "spotify")
+```
+
+  
+
 # triad_coverage
 
 

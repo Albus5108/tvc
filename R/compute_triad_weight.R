@@ -54,14 +54,31 @@ compute_triad_weight <- function(songs, triad_occurence) {
                      by = dplyr::join_by(triad)) %>% 
     dplyr::mutate(
       frequency = frequency / sum(frequency),
+      frequency_cr = dplyr::if_else(raw_prop_triad / frequency > 0.25,
+                                           frequency, 0),
+      frequency_cr = frequency / sum(frequency_cr)
+    ) %>% 
+    dplyr::mutate(
       prop_triad = dplyr::case_when(
-        raw_prop_triad > frequency ~ frequency,
+        raw_prop_triad > frequency_cr ~ frequency_cr,
         TRUE ~ raw_prop_triad),
-      prop_triad = prop_triad /sum(prop_triad),
+      prop_triad = prop_triad / sum(prop_triad),
       weight_triad = 1 - (dplyr::case_when(
-        raw_prop_triad - frequency > 0 ~ raw_prop_triad - frequency,
+        raw_prop_triad - frequency_cr > 0 ~ raw_prop_triad - frequency_cr,
         TRUE ~ 0) / raw_prop_triad)
     )
+  
+  # w_triad %>%
+  # ggplot2::ggplot() +
+  # ggplot2::aes(frequency, raw_prop_triad) +
+  # ggplot2::geom_point(ggplot2::aes(fill = weight_triad), shape = 21, size =4) +
+  # # ggplot2::lims(x = 0:1, y = 0:1) +
+  # scale_fill_tvc_c(direction = -1) +
+  # ggplot2::labs(x = "Expected proportion among songs",
+  #               y = "Actual proportion in playlist") +
+  # ggplot2::theme_bw() +
+  # ggplot2::geom_abline(slope = 1, intercept = 0) +
+  # ggplot2::geom_text(ggplot2::aes(label = triad), nudge_y = .02)
   # identical(w_triad, w_triadNew)
   # waldo::compare(w_triad, w_triadNew)
   return(w_triad)

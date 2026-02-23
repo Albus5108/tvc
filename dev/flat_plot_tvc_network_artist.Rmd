@@ -32,7 +32,7 @@ pkgload::load_all(export_all = FALSE)
 plot_tvc_network_artist <- function(data) {
   data <- data %>% 
     dplyr::filter(!is.na(Degree),
-                  `Ordre des Notes` == "1 7") %>% 
+                  triad == "1 7") %>% 
     ## On garde seulement les artistes qui utilisent massivement
     dplyr::group_by(Artist) %>% 
     dplyr::filter(length(unique(ISRC)) > 1L) %>% 

@@ -2,55 +2,151 @@
 
 #' Compute Triad Probability
 #' 
-#' Description
+#' A new and more consistent way of computing the probability of a triad.
 #' @param stat_interval a named numeric vector as returned by \code{compute_interval_probability}
 #'
 #' @return \code{compute_triad_probability} returns a tibble of theoretical triad probabilities
 #' 
 #' @noRd
 #' @examples
-#' stat_interval <- compute_interval_probability(nb_interval = 3)
-#' interval_occurence <- compute_triad_probability(stat_interval)
-compute_triad_probability <- function(stat_interval){
-  interval_occurence0 <- tibble::tibble(
-    interval = as.integer(names(stat_interval)),
-    frequency = as.numeric(stat_interval)
-  ) %>% 
-    dplyr::cross_join(x = ., y = ., suffix = c("_first", "_second")) %>% 
-    dplyr::mutate(frequency = frequency_first * frequency_second) %>% 
-    ## Introducing Negative Intervals
-    dplyr::mutate(dplyr::across(dplyr::contains("interval"),
-                                .fns = ~ purrr::map(.x = ., .f = ~ .x * c(1, -1)))) %>% 
-    tidyr::unnest(cols = interval_first) %>% 
-    tidyr::unnest(cols = interval_second)
-  
-  interval_cum_occurence <- interval_occurence0 %>% 
-    dplyr::mutate(interval_cum = interval_first + interval_second) %>% 
-    dplyr::group_by(interval_cum) %>% 
-    dplyr::summarise(frequency = sum(frequency)) %>% 
-    dplyr::mutate(frequency = frequency / max(frequency))
-    # plot(interval_cum_occurence)
-  
-  interval_occurence <- interval_occurence0 %>% 
-    dplyr::select(-c(frequency_first, frequency_second)) %>% 
+#' interval_occurence <- compute_triad_probability(nb_interval = 500L, nb_min = 1L, prob_alien = .5)
+compute_triad_probability <- function(nb_interval = 10000L, nb_notes = 2L, scope = 1L, nb_min = 100L, prob_alien = 0.15){
+  # nb_interval <- 10000L # par iteration. plus 100
+  # nb_notes <- 2L # triad baby
+  # nb_min = 100L
+  # prob_alien = 0.15
+  # scope <- 1 # octave up and down
+
+  tabTriads <- build_triad_from_config(env = "spotify") %>%
+    # Filter out non-triad
+    dplyr::filter(grepl(pattern = "^-?[0-9]+ -?[0-9]+$", x = triad)) %>%
+    ## Extract Intervals
+    dplyr::mutate(triad_tmp = triad) %>%
+    tidyr::extract(col = triad_tmp, into = c("First_Interval", "Second_Interval"), regex = "^(.*) (.*)$") %>%
+    dplyr::mutate(dplyr::across(.cols = c(First_Interval, Second_Interval), .fns = as.integer))
+
+  major_scale <- c(prob_alien, 1, prob_alien, 1, 1, prob_alien, 1, prob_alien, 1, prob_alien, 1, 1)
+  minor_scale <- c(prob_alien, 1, 1, prob_alien, 1, prob_alien, 1, 1, prob_alien, prob_alien, 1, 1)
+
+  len_scale <- length(major_scale)
+  scope_interval <- seq_len(len_scale * scope - 1L) # notes from scale
+  vector_interval <- as.integer(c(sort(-scope_interval), 0, scope_interval))
+
+  x <- list(rep(major_scale, 1L + scope * (2L + 1L) * 2L),
+            rep(minor_scale, 1L + scope * (2L + 1L) * 2L))
+  weight_scale <- c(1, .3) # c(1, 0)
+  interval_occurence0 <- expand.grid(list(vector_interval)[rep(1L, nb_notes)]) %>%
+    tibble::as_tibble() %>%
+    dplyr::rename_all(.funs = ~ paste0("interval_", seq_len(nb_notes))) %>%
+    dplyr::mutate(frequency = 0)
+  cr <- TRUE
+  j <- 0L
+  jmax <- 30L
+  while(cr & j <= jmax) {
+    j <- j + 1
+    scale <- sample(x = x, size = nb_interval, replace = TRUE, prob = weight_scale)
+    # note_start0 <- note_start <- rep(1L, nb_interval) # Do
+    note_start0 <- note_start <- purrr::map_dbl(
+      .x = scale,
+      .f = ~ sample(x = 1L:len_scale,
+                    size = 1L, replace = TRUE,
+                    prob = .x[(len_scale):(len_scale - 1L + len_scale)])
+    )
+
+    raw_weight_interval <- sort(scope_interval, decreasing = TRUE)/max(scope_interval)
+    # raw_weight_interval2 <- raw_weight_interval # exp(x = -0.3 *  (scope_interval - 1))
+    # start_note_exp_descr <- 7L # if(x < 7) {-x} else {- x^2}
+    # raw_weight_interval[start_note_exp_descr:length(raw_weight_interval)] <- raw_weight_interval[start_note_exp_descr:length(raw_weight_interval)] * raw_weight_interval2[1L:(length(raw_weight_interval) + 1L - start_note_exp_descr)]
+    raw_weight_interval <- c(sort(raw_weight_interval), 0, raw_weight_interval)
+    # plot(raw_weight_interval)
+    lintervals <- list()
+    for (i in seq_len(nb_notes)) {
+      # message(i)
+      if(i > 1) {
+        note_start <- note_start + lintervals[[i - 1L]] - 0L
+      }
+      lintervals[[i]] <- purrr::pmap_dbl(
+        .l = list(scale,
+                  note_start),
+        .f = ~ sample(x = vector_interval, size = 1L, replace = TRUE,
+                      prob = raw_weight_interval * ..1[
+                        (len_scale * 2L + ..2  -0L):
+                          (len_scale * 2L + ..2 + len_scale * scope * 2 - 2L)
+                        ])
+      )
+      # zob <- sample(x = vector_interval, size = 1L, replace = TRUE,
+      #        prob = raw_weight_interval * scale[[2]][
+      #          (len_scale * 2L + note_start[2] + -1L):
+      #            (len_scale * 2L + note_start[2] + len_scale * scope * 2 - 3L)
+      #          ])
+      # note_start <- note_start + zob
+    }
+
+    interval_occurence0 <- tibble::as_tibble(
+      lintervals,
+      .name_repair = ~ paste0("interval_", seq_len(nb_notes))
+    ) %>%
+      dplyr::group_by(interval_1, interval_2) %>%
+      dplyr::summarise(frequency = dplyr::n(),
+                       .groups = "drop") %>%
+      ## Add previous results
+      dplyr::bind_rows(interval_occurence0) %>%
+      dplyr::group_by(interval_1, interval_2) %>%
+      dplyr::summarise(frequency = sum(frequency),
+                       .groups = "drop")
+    # interval_occurence0 %>%
+    #   dplyr::arrange(dplyr::desc(frequency))
+    # lintervals[[1]] %>% table() %>% plot()
+
+    cr <- interval_occurence0 %>%
+      dplyr::inner_join(tabTriads,
+                        by = dplyr::join_by(interval_1 == First_Interval,
+                                            interval_2 == Second_Interval)) %>%
+      dplyr::summarise(cr = any(frequency < nb_min)) %>%
+      dplyr::pull(cr)
+  }
+
+  if(cr) {
+    cli::cli_warn("Loop ended before convergence")
+    frequency
+    interval_occurence0 %>%
+      dplyr::left_join(tabTriads,
+                      by = dplyr::join_by(interval_1 == First_Interval,
+                                          interval_2 == Second_Interval)) %>%
+      ggplot2::ggplot() +
+      ggplot2::aes(x = interval_1 + 1/11 * interval_2,
+                   y = frequency,
+                   colour = is.na(triad)) +
+      ggplot2::geom_point()
+  }
+
+  interval_occurence <- interval_occurence0 %>%
+    dplyr::mutate(frequency = frequency / max(frequency)) %>%
+    dplyr::rename(interval_first = interval_1, interval_second = interval_2) %>%
     ## Range octave
     dplyr::filter(
       abs(interval_first) < 12,
       abs(interval_second) < 12
-    ) %>% 
+    ) %>%
     ## Take into account the interval between 1st and 3rd note
-    dplyr::mutate(interval_cum = interval_first + interval_second) %>% 
+    dplyr::mutate(interval_cum = interval_first + interval_second) %>%
     dplyr::filter(
       abs(interval_cum) < 12
     ) %>%
-    dplyr::left_join(
-      y = interval_cum_occurence,
-      by = dplyr::join_by(interval_cum),
-      suffix = c("", "_cum")
-    ) %>%
-    dplyr::mutate(frequency = frequency * frequency_cum) %>%
-    dplyr::select(-frequency_cum) %>%
     ## Name triads
     dplyr::mutate(triad = paste(interval_first, interval_second))
+
+  ggplot2::ggplot() +
+    ggplot2::aes(interval_first, interval_second) +
+    ggplot2::geom_raster(data = interval_occurence, ggplot2::aes(fill = frequency)) +
+    # ggplot2::geom_raster(data = dplyr::filter(interval_occurence,
+    #                                           frequency > max(dplyr::inner_join(interval_occurence,
+    #                                                                             dplyr::distinct(songs, triad),
+    #                                                                             by = dplyr::join_by(triad))[["frequency"]])),
+    #                      fill = "black") +
+    ggplot2::geom_tile(data = dplyr::filter(interval_occurence, triad %in% unique(songs[["triad"]])),
+                       fill = NA, colour = "white") +
+    ggplot2::theme_bw() +
+    scale_fill_tvc_c()
   return(interval_occurence)
 }

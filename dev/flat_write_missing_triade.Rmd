@@ -50,12 +50,12 @@ write_missing_triade <- function(songs, triads, ss = NULL, triadeType = "1 7") {
   
   ## New triade missing from Google Sheet
   newTriade <- songsSpotify %>% 
-    dplyr::anti_join(y = triads, by = dplyr::join_by(ISRC, triad == `Ordre des Notes`)) %>% 
+    dplyr::anti_join(y = triads, by = dplyr::join_by(ISRC, triad)) %>% 
     dplyr::arrange(triad, Playlist_Order)
   
   ## Triads entries missing from Spotify playlist
   missingInSpotify <- dplyr::anti_join(
-    x = dplyr::filter(triads, `Ordre des Notes` %in% triadeType),
+    x = dplyr::filter(triads, triad %in% triadeType),
     y = songsSpotify,
     by = dplyr::join_by(ISRC)
     ) %>% 

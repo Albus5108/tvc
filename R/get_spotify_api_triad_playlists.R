@@ -12,10 +12,7 @@
 get_spotify_api_triad_playlists <- function(){
   ## Exemple Reading private playlist
   # songsNegTVC <- tvc:::get_spotify_api_playlist(playlist_id = "1wAEEcvkLBETRvIs06BK1E", scope = "private")
-  tabTriads <- get_config(env = "spotify")$playlists %>%
-    purrr::transpose() %>%
-    tibble::as_tibble() %>%
-    tidyr::unnest(cols = c(triad, name, playlist))
+  tabTriads <- build_triad_from_config(env = "spotify")
   
   songs <- tabTriads %>%
     # Filter out non-triad

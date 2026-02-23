@@ -12,10 +12,7 @@
 #' triads <- read_sheet_triad()
 #' dat <- triad_coverage(triads = triads)
 triad_coverage <- function(triads, weighted = TRUE) {
-  tabTriads <- get_config(env = "spotify")$playlists %>%
-    purrr::transpose() %>%
-    tibble::as_tibble() %>%
-    tidyr::unnest(cols = c(triad, name, playlist))
+  tabTriads <- build_triad_from_config(env = "spotify")
   
   if(weighted) {
     attempt::stop_if_not(rlang::has_name(triads, name = "weighted_year_country"),
@@ -42,10 +39,6 @@ triad_coverage <- function(triads, weighted = TRUE) {
     dplyr::mutate(triad_tmp = triad) %>%
     tidyr::extract(col = triad_tmp, into = c("First_Interval", "Second_Interval"), regex = "^(.*) (.*)$") %>%
     dplyr::mutate(dplyr::across(.cols = c(First_Interval, Second_Interval), .fns = as.integer)) %>%
-    ## Filter Out Negative Triad etc.
-    dplyr::filter(dplyr::between(First_Interval, -2L, 2L)) %>%
-    # dplyr::filter(dplyr::between(First_Interval, 0L, 2L),
-    #               dplyr::between(Second_Interval, 3L, 11L)) %>%
     dplyr::mutate(dplyr::across(.cols = c(First_Interval, Second_Interval), .fns = as.factor)) %>%
     ## Fill empty triad --> Nb songs set to zero
     # dplyr::mutate(dplyr::across(.cols = c(Nb_Songs, Weighted_Nb_Songs),
