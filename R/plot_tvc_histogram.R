@@ -71,9 +71,11 @@ plot_tvc_histogram <- function(songs, triadType = "1 7", group_year = 1L, weight
     dplyr::mutate(
        # & !Type %in% c("thème mélodique principal",
        #                "en passant dans la mélodie", NA)
-      triad_type = factor(dplyr::if_else(any(triad %in% triadType),
-                                  triadType,
-                                  "Others"), levels = c("Others", triadType))
+      triad_type = factor(dplyr::case_when(
+        any(triad %in% triadType) ~ triadType,
+        any(triad %in% c("1 7", "-1 8", "-1 -7", "1 -8", "-8 1", "-7 -1", "7 1", "8 -1")) ~ "Similar",
+        TRUE ~ "Others"),
+        levels = c("Others", "Similar", triadType))
     ) %>% 
     # dplyr::filter(Album_Year == 2024) %>%
     # dplyr::filter(is.na(weighted_year_country)) %>%
@@ -105,10 +107,10 @@ plot_tvc_histogram <- function(songs, triadType = "1 7", group_year = 1L, weight
       fill = triad_type
     ) + #Weighted_Nb_Songs) +
     ggplot2::geom_col() +
-    ggplot2::annotate(geom = "label", x = c(1986, 2025),
+    ggplot2::annotate(geom = "label", x = c(1985, 2025),
                       y = max(dat$Weighted_Nb_Songs) * .3,
-                      label = c("1986", "2025")) +
-    scale_fill_tvc_d(palette = "main", direction = -1) +
+                      label = c("1985", "2025")) +
+    scale_fill_tvc_d(palette = "histogram", direction = -1) +
     ggplot2::theme_bw() +
     ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(n = 10)) +
     ggplot2::labs(x = "Album Year",

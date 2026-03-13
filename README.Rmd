@@ -37,7 +37,7 @@ It helps you retrieve songs information from Spotify playlist using {[spotifyr](
 It compares the tracklists with the songs that are already stored in the googlesheet and write the new ones inside the googlesheet.
 A config.yml file helps you manage your keys and googlesheet urls.
 
-```{r read songs}
+```{r read songs, eval=FALSE}
 library(tvc)
 songs <- tvc::get_spotify_api_playlist(playlist_id = "55hU8f5avA0Fydvs8KbqRD", scope = "public") %>%
     dplyr::mutate(triad = "1 7")
@@ -63,7 +63,16 @@ songs %>%
 
 ![](./vignettes/histogram-triad-vanessa-carlton.png)
 
-To make this graph, we used the playlist "Jus d'oreille #16 - extended La Triade Vanessa Carlton".
+The red histogram is based on the playlist ["Jus d'oreille #16 - extended La Triade Vanessa Carlton"](https://open.spotify.com/playlist/1mqmeqSKJeXo6GjiMRfutj).
+
+Have you ever wondered if this triad has any competitors, and which ones are the most common?
+
+```{r raster, eval=FALSE}
+songs %>%
+  plot_triad_coverage(weighted = FALSE)
+```
+
+![](./vignettes/raster-occurence-triads.png)
 
 ## Code of Conduct
 

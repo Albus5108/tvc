@@ -18,6 +18,9 @@ tvc_corp_palette <- function(palette = "main", ...) {
                "#A3472A",  # Terre cuite foncee, plus rustique
                "#7B2E2E", # Bordeaux profond, pour l’ancrage visuel,
                "black"),  # Noir,  
+    `histogram` = c("#EB5646",  # Rouge vif
+                    "#D9A066",  # Ocre dore, pour rechauffer et varier),
+                    "#FCF1DD"),  # Beige clair
     `gradient` = c("#FCF1DD",  # Beige clair
                    "#D9A066",  # Ocre dore, pour rechauffer et varier
                    "#A3472A",  # Terre cuite foncee, plus rustique

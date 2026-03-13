@@ -65,8 +65,19 @@ songs %>%
 
 ![](./vignettes/histogram-triad-vanessa-carlton.png)
 
-To make this graph, we used the playlist “Jus d’oreille \#16 - extended
-La Triade Vanessa Carlton”.
+The red histogram is based on the playlist [“Jus d’oreille \#16 -
+extended La Triade Vanessa
+Carlton”](https://open.spotify.com/playlist/1mqmeqSKJeXo6GjiMRfutj).
+
+Have you ever wondered if this triad has any competitors, and which ones
+are the most common?
+
+``` r
+songs %>%
+  plot_triad_coverage(weighted = FALSE)
+```
+
+![](./vignettes/raster-occurence-triads.png)
 
 ## Code of Conduct
 
