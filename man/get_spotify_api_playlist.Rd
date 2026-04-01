@@ -36,6 +36,6 @@ Get Tracks from Playlist Spotify
 playlist_id <- get_playlist_id(triad = "1 7")
 songs <- tvc:::get_spotify_api_playlist(
   playlist_id = playlist_id,
-  scope = "public"
+  scope = "private"
 )
 }

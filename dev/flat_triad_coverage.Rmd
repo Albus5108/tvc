@@ -39,6 +39,10 @@ build_triad_from_config <- function(env = "spotify"){
     cli::cli_abort(message = "Duplicated playlist_id : {tabTriads[['playlist']][duplicated(tabTriads[['playlist']])]}")
   }
   
+  if(any(is.na(tabTriads[["playlist"]]))) {
+    cli::cli_abort(message = "playlist_id is NA : {tabTriads[['name']][is.na(tabTriads[['playlist']])]}")
+  }
+  
   return(tabTriads)
 }
 ```

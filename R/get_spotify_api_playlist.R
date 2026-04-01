@@ -21,7 +21,7 @@
 #' playlist_id <- get_playlist_id(triad = "1 7")
 #' songs <- tvc:::get_spotify_api_playlist(
 #'   playlist_id = playlist_id,
-#'   scope = "public"
+#'   scope = "private"
 #' )
 get_spotify_api_playlist <- function(env = "spotify", playlist_id = NULL,
                                      market = NULL, fields = NULL, scope = c("public", "private"),
@@ -36,29 +36,79 @@ get_spotify_api_playlist <- function(env = "spotify", playlist_id = NULL,
     dplyr::mutate(
       data = purrr::map(
         .x = playlist_id,
-        .f = ~ spotifyr::get_playlist(playlist_id = .x,
-                                      authorization = token)
+        .f = ~ {
+          ## Obsolete since february 2026
+          # spotifyr::get_playlist(playlist_id = .x,
+          #                             authorization = token)
+          playlist_id <- .x
+          
+          base_url <- "https://api.spotify.com/v1/playlists"
+          url <- stringr::str_glue("{base_url}/{playlist_id}")
+          params <- list(fields = paste(fields, collapse = ","),
+                         market = market, 
+                         access_token = token)
+          init_query <- spotifyr:::query_playlist(url, params = params)
+          total_fetched_tracks <- purrr::pluck(init_query, "items", "limit")
+          total_tracks <- purrr::pluck(init_query, "items", "total")
+          if (total_tracks > total_fetched_tracks) {
+            n_pages <- (total_tracks - total_fetched_tracks)%/%50 # Range 0-50 
+            offsets <- total_fetched_tracks + seq(from = 0, to = n_pages) * 50
+            page_urls <- stringr::str_glue("{url}/items?offset={offsets}&limit=50")
+            other_pages <- purrr::map(page_urls, spotifyr:::query_playlist, params)
+            all_items <- dplyr::bind_rows(
+              purrr::pluck(init_query, "items", "items"), 
+              purrr::map_dfr(other_pages, purrr::pluck, "items")
+            )
+            init_query[["items"]][["items"]] <- all_items
+          }
+          structure(init_query, class = c("playlist", "list"))
+        }
       )
     ) %>% 
-    dplyr::mutate(items = purrr::map(.x = data, .f = ~ .x$tracks$items)) %>% 
+    dplyr::mutate(items = purrr::map(.x = data, .f = ~ .x[["items"]][["items"]])) %>% 
     dplyr::select(-data) %>% 
     tidyr::unnest(cols = items)
                         
-  ## Get Genre via artist details
-  artists <- playlist$track.artists %>% 
-    dplyr::bind_rows() %>% 
-    tibble::as_tibble() %>% 
-    dplyr::distinct()
-  
-  stepArtist <- 50L
-  artists <- seq(0L, nrow(artists), stepArtist) %>% 
-    purrr::map(.f = ~ 1L:stepArtist + .x) %>% 
-    purrr::map(.f = ~ .x[.x <= nrow(artists)]) %>% 
-    purrr::compact() %>% 
-    purrr::map(.f = ~ spotifyr::get_artists(ids = artists$id[.x],
-                                            authorization = token)) %>% 
-    dplyr::bind_rows() %>% 
-    tibble::as_tibble()
+  ## Get Genre via artist details --> Impossible, Genre is Deprecated)
+  # artists <- playlist[["item.artists"]] %>% 
+  #   dplyr::bind_rows() %>% 
+  #   tibble::as_tibble() %>% 
+  #   dplyr::distinct()
+  # 
+  # artists <- artists |>
+  #   dplyr::distinct(id) |> 
+  #   dplyr::slice(1:20) |> 
+  #   dplyr::mutate(
+  #     data = purrr::map(
+  #       .x = id,
+  #       .f = ~ {
+  #         ## Obsolete since february 2026
+  #         # spotifyr::get_artists(ids = artists$id[.x],
+  #         #                                       authorization = token)
+  #         
+  #         id <- .x
+  #         include_meta_info <- FALSE
+  #         
+  #         base_url <- "https://api.spotify.com/v1/artists"
+  #         url <- stringr::str_glue("{base_url}/{id}")
+  #         params <- list(access_token = token)
+  #         res <- httr::RETRY(verb = "GET",
+  #                            url = url,
+  #                            query = params,
+  #                            encode = "json", 
+  #                            terminate_on = c(401, 403, 404))
+  #         httr::stop_for_status(res)
+  #         res <- jsonlite::fromJSON(httr::content(res, as = "text", encoding = "UTF-8"), 
+  #                                   flatten = TRUE)
+  #         # if (!include_meta_info) {
+  #         #   res <- res$artists
+  #         # }
+  #         tibble::as_tibble(res) |> 
+  #           dplyr::distinct(id, .keep_all = TRUE)
+  #       })
+  #   ) |> 
+  #   tidyr::unnest() |> 
+  #   dplyr::bind_rows()
   
   ## Parsing
   songs <- playlist %>%
@@ -68,26 +118,26 @@ get_spotify_api_playlist <- function(env = "spotify", playlist_id = NULL,
     dplyr::relocate(Playlist_Order) %>% 
     ## Remove useless columns
     dplyr::select(-c(is_local, primary_color,
-                     track.preview_url, track.type, track.episode, track.track,
-                     track.album.type, track.album.album_type, track.album.id, track.album.artists,
+                     item.type, item.episode,
+                     item.album.type, item.album.album_type, item.album.id, item.album.artists,
                      dplyr::contains("href"), dplyr::contains("uri"), dplyr::contains("urls"),
                      dplyr::contains("available_markets"),
                      dplyr::contains("is_local"), dplyr::contains("image"),
                      dplyr::contains("added_by"))) %>% 
-    dplyr::mutate(track.artists = purrr::map(track.artists, ~ dplyr::rename_all(.x, .funs = ~paste0("artist_", .)))) %>% 
-    tidyr::unnest(cols = track.artists) %>% 
-    ## Genres
-    dplyr::left_join(dplyr::select(artists, id, genres),
-                     by = c("artist_id" = "id")) %>% 
-    dplyr::rename(ISRC = track.external_ids.isrc,
-                  Song = track.name,
+    dplyr::mutate(item.artists = purrr::map(item.artists, ~ dplyr::rename_all(.x, .funs = ~paste0("artist_", .)))) %>% 
+    tidyr::unnest(cols = item.artists) %>% 
+    ## Genres (Deprecated)
+    # dplyr::left_join(dplyr::select(artists, id, genres),
+    #                  by = c("artist_id" = "id")) %>% 
+    dplyr::rename(ISRC = item.external_ids.isrc,
+                  Song = item.name,
                   Artist = artist_name) %>% 
     dplyr::select(-c(dplyr::contains("artist_"))) %>% 
     dplyr::relocate(Song, Artist, ISRC) %>%
     ## Key
     dplyr::mutate(Key = as.character(NA)) %>% 
     ## Compute Album Year
-    dplyr::rename(Album_Date = track.album.release_date) %>% 
+    dplyr::rename(Album_Date = item.album.release_date) %>% 
     dplyr::mutate(Album_Year = as.numeric(substr(Album_Date, 1, 4))) %>% 
     dplyr::arrange(factor(playlist_id, levels = init_playlist_id)) %>% 
     tidyr::nest(data = -c(playlist_id)) %>% 

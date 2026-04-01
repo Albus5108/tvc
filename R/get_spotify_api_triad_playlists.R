@@ -17,7 +17,17 @@ get_spotify_api_triad_playlists <- function(){
   songs <- tabTriads %>%
     # Filter out non-triad
     dplyr::filter(grepl(pattern = "^-?[0-9]+ -?[0-9]+$", x = triad)) %>%
-    dplyr::mutate(songs = get_spotify_api_playlist(playlist_id = playlist, scope = "private"))
+    dplyr::mutate(
+      songs = purrr::map(
+        .x = playlist,
+        .f = ~ get_spotify_api_playlist(playlist_id = .x, scope = "private")
+      )
+    )
+  
+  ## debug
+  # for(i in 1:nrow(tabTriads)) {
+  #   get_spotify_api_playlist(playlist_id = tabTriads$playlist[i], verbose = TRUE)
+  # }
   
   songs <- songs %>%
     tidyr::unnest(cols = songs)

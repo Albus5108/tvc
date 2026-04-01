@@ -16,6 +16,7 @@ write_missing_region <- function(songs) {
   )
   
   songs %>%
+    dplyr::mutate(genres = list(NULL)) |> 
     dplyr::distinct(Artist, genres) %>%
     # dplyr::distinct(genres, .keep_all = TRUE) %>% View()
     dplyr::arrange(Artist) %>%
