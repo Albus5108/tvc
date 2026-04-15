@@ -7,6 +7,7 @@
 get_spotify_api_playlist(
   env = "spotify",
   playlist_id = NULL,
+  offset = NULL,
   market = NULL,
   fields = NULL,
   scope = c("public", "private"),

@@ -4,7 +4,10 @@
 \alias{get_spotify_api_triad_playlists}
 \title{Get All Triads}
 \usage{
-get_spotify_api_triad_playlists()
+get_spotify_api_triad_playlists(songs = NULL)
+}
+\arguments{
+\item{songs}{optional tibble of songs. If NULL, all data are retrieved. If not NULL, an offset will be deduced and only the latest songs will be retrieved.}
 }
 \value{
 \code{get_spotify_api_triad_playlists} returns a tibble of songs for different triads

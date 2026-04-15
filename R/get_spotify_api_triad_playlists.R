@@ -4,25 +4,56 @@
 #' 
 #' A Wrapper around \code{\link{get_spotify_api_playlist}} to get all triad's songs at once in an optimized way
 #' 
+#' @param songs optional tibble of songs. If NULL, all data are retrieved. If not NULL, an offset will be deduced and only the latest songs will be retrieved.
+#'
 #' @return \code{get_spotify_api_triad_playlists} returns a tibble of songs for different triads
 #' 
 #' @export
 #' @examples
 #' # get_spotify_api_triad_playlists()
-get_spotify_api_triad_playlists <- function(){
+get_spotify_api_triad_playlists <- function(songs = NULL){
   ## Exemple Reading private playlist
   # songsNegTVC <- tvc:::get_spotify_api_playlist(playlist_id = "1wAEEcvkLBETRvIs06BK1E", scope = "private")
   tabTriads <- build_triad_from_config(env = "spotify")
+  
+  songs0 <- songs
+  if(!is.null(songs0)) {
+    tabOffsets <- songs0 |> 
+      dplyr::group_by(triad, playlist) |> 
+      dplyr::summarise(
+        offset = max(Playlist_Order),
+        offset_alt = length(unique(paste(ISRC, item.id))),
+        .groups = "drop"
+      ) |> 
+      dplyr::mutate(
+        offset = dplyr::if_else(offset_alt < offset,
+                                offset_alt,
+                                offset)
+      ) |> 
+      dplyr::select(-offset_alt)
+    tabTriads <- tabTriads |> 
+      dplyr::left_join(tabOffsets, by = dplyr::join_by(triad, playlist)) |> 
+      dplyr::mutate(offset = dplyr::if_else(is.na(offset), 0, offset))
+  } else {
+    tabTriads <- tabTriads |> 
+      dplyr::mutate(offset = 0)
+  }
   
   songs <- tabTriads %>%
     # Filter out non-triad
     dplyr::filter(grepl(pattern = "^-?[0-9]+ -?[0-9]+$", x = triad)) %>%
     dplyr::mutate(
-      songs = purrr::map(
+      songs = purrr::map2(
         .x = playlist,
-        .f = ~ get_spotify_api_playlist(playlist_id = .x, scope = "private")
+        .y = offset,
+        .f = ~ get_spotify_api_playlist(
+          playlist_id = .x,
+          offset = .y,
+          scope = "private"
+        )
       )
-    )
+    ) |> 
+    dplyr::select(-offset)
   
   ## debug
   # for(i in 1:nrow(tabTriads)) {
@@ -31,6 +62,11 @@ get_spotify_api_triad_playlists <- function(){
   
   songs <- songs %>%
     tidyr::unnest(cols = songs)
+  
+  if(!is.null(songs0)) {
+    songs <- songs0 |> 
+      dplyr::rows_upsert(songs, by = c("triad", "playlist", "ISRC", "Artist"))
+  }
   
   return(songs)
 }

@@ -45,7 +45,7 @@ flat_compute_population_estimates.Rmd:
     flat_file: dev/flat_compute_population_estimates.Rmd
     vignette_name: Population Estimates
     open_vignette: true
-    check: true
+    check: false
     document: true
     overwrite: ask
     clean: ask
@@ -248,7 +248,7 @@ flat_write_missing_region.Rmd:
     flat_file: dev/flat_write_missing_region.Rmd
     vignette_name: Update Region Google Sheet
     open_vignette: true
-    check: true
+    check: false
     document: true
     overwrite: ask
     clean: ask

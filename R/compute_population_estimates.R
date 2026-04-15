@@ -79,6 +79,7 @@ compute_population_estimates <- function(update = TRUE, group_year = 1L) {
       grepl("Sweden", file) ~ "Sweden",
       grepl("Mexico", file) ~ "Mexico",
       grepl("Taiwan", file) ~ "Taiwan",
+      grepl("Iran", file) ~ "Iran",
       TRUE ~ file
     )) %>%
     dplyr::mutate(data = purrr::map(file, ~ suppressMessages(readr::read_csv(.x, show_col_types = FALSE)))) %>%

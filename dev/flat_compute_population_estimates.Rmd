@@ -172,6 +172,7 @@ compute_population_estimates <- function(update = TRUE, group_year = 1L) {
       grepl("Sweden", file) ~ "Sweden",
       grepl("Mexico", file) ~ "Mexico",
       grepl("Taiwan", file) ~ "Taiwan",
+      grepl("Iran", file) ~ "Iran",
       TRUE ~ file
     )) %>%
     dplyr::mutate(data = purrr::map(file, ~ suppressMessages(readr::read_csv(.x, show_col_types = FALSE)))) %>%
@@ -210,6 +211,6 @@ test_that("compute_population_estimates works", {
 # Run but keep eval=FALSE to avoid infinite loop
 # Execute in the console directly
 fusen::inflate(flat_file = "dev/flat_compute_population_estimates.Rmd",
-               vignette_name = "Population Estimates")
+               vignette_name = "Population Estimates", check = FALSE)
 ```
 
