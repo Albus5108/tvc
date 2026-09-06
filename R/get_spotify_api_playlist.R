@@ -54,12 +54,12 @@ get_spotify_api_playlist <- function(env = "spotify", playlist_id = NULL, offset
                          access_token = token)
           if(!is.null(offset) && offset > 0) {
             url_offset <- stringr::str_glue("{url}/items?offset={offset}&limit=50")
-            init_query <- spotifyr:::query_playlist(url = url_offset, params = params)
+            init_query <- query_playlist(url = url_offset, params = params)
             ## Trick to make it look like a "playlist" response
             init_query <- list("items" = init_query)
             total_fetched_tracks <- purrr::pluck(init_query, "items", "limit") + offset
           } else {
-            init_query <- spotifyr:::query_playlist(url, params = params)
+            init_query <- query_playlist(url, params = params)
             total_fetched_tracks <- purrr::pluck(init_query, "items", "limit")
           }
           total_tracks <- purrr::pluck(init_query, "items", "total")
@@ -67,7 +67,7 @@ get_spotify_api_playlist <- function(env = "spotify", playlist_id = NULL, offset
             n_pages <- (total_tracks - total_fetched_tracks)%/%50 # Range 0-50 
             offsets <- total_fetched_tracks + seq(from = 0, to = n_pages) * 50
             page_urls <- stringr::str_glue("{url}/items?offset={offsets}&limit=50")
-            other_pages <- purrr::map(page_urls, spotifyr:::query_playlist, params)
+            other_pages <- purrr::map(page_urls, query_playlist, params)
             all_items <- dplyr::bind_rows(
               purrr::pluck(init_query, "items", "items"), 
               purrr::map_dfr(other_pages, purrr::pluck, "items")

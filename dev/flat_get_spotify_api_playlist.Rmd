@@ -93,6 +93,52 @@ test_that("auth_spotify works", {
 })
 ```
 
+# query_playlist
+    
+```{r development-query_playlist}
+# You can prepare the code of the query_playlist() function here
+```
+  
+```{r function-query_playlist}
+#' Query Playlist
+#' 
+#' Description
+#' 
+#' @return
+#' 
+#' @noRd
+#' @importFrom httr RETRY add_headers stop_for_status content
+#' @importFrom jsonlite fromJSON
+query_playlist <- function(url, params) {
+  res <- httr::RETRY(
+    verb = "GET",
+    url = url,
+    query = params[1:2],
+    config = httr::add_headers(
+      Authorization = paste("Bearer", params$access_token)
+    ),
+    encode = "json"
+  )
+  httr::stop_for_status(res)
+  res <- jsonlite::fromJSON(
+    httr::content(res, as = "text", 
+                  encoding = "UTF-8"),
+    flatten = TRUE
+    )
+  res
+}
+```
+  
+```{r example-query_playlist}
+query_playlist()
+```
+  
+```{r tests-query_playlist}
+test_that("query_playlist works", {
+  expect_true(inherits(query_playlist, "function")) 
+})
+```
+
 # GET Spotify Playlist
 
 ```{r development-get_spotify_api_playlist}
@@ -154,12 +200,12 @@ get_spotify_api_playlist <- function(env = "spotify", playlist_id = NULL, offset
                          access_token = token)
           if(!is.null(offset) && offset > 0) {
             url_offset <- stringr::str_glue("{url}/items?offset={offset}&limit=50")
-            init_query <- spotifyr:::query_playlist(url = url_offset, params = params)
+            init_query <- query_playlist(url = url_offset, params = params)
             ## Trick to make it look like a "playlist" response
             init_query <- list("items" = init_query)
             total_fetched_tracks <- purrr::pluck(init_query, "items", "limit") + offset
           } else {
-            init_query <- spotifyr:::query_playlist(url, params = params)
+            init_query <- query_playlist(url, params = params)
             total_fetched_tracks <- purrr::pluck(init_query, "items", "limit")
           }
           total_tracks <- purrr::pluck(init_query, "items", "total")
@@ -167,7 +213,7 @@ get_spotify_api_playlist <- function(env = "spotify", playlist_id = NULL, offset
             n_pages <- (total_tracks - total_fetched_tracks)%/%50 # Range 0-50 
             offsets <- total_fetched_tracks + seq(from = 0, to = n_pages) * 50
             page_urls <- stringr::str_glue("{url}/items?offset={offsets}&limit=50")
-            other_pages <- purrr::map(page_urls, spotifyr:::query_playlist, params)
+            other_pages <- purrr::map(page_urls, query_playlist, params)
             all_items <- dplyr::bind_rows(
               purrr::pluck(init_query, "items", "items"), 
               purrr::map_dfr(other_pages, purrr::pluck, "items")
@@ -355,7 +401,8 @@ get_spotify_api_triad_playlists <- function(songs = NULL){
   # }
   
   songs <- songs %>%
-    tidyr::unnest(cols = songs)
+    tidyr::unnest(cols = songs) |> 
+    fix_album_date()
   
   if(!is.null(songs0)) {
     songs <- songs0 |> 
