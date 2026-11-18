@@ -40,8 +40,7 @@ Suggests:
     roxygen2 (>= 8.1.0),
     tabr,
     testthat
-VignetteBuilder: 
-    knitr
+VignetteBuilder: knitr
 Config/fusen/version: 0.7.2
 Config/roxygen2/version: 8.1.0
 Encoding: UTF-8

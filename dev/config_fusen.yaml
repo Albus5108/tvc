@@ -276,6 +276,21 @@ flat_triad_coverage.Rmd:
     overwrite: ask
     clean: ask
     codecov: false
+flat_triad_nbda.Rmd:
+  path: dev/flat_triad_nbda.Rmd
+  state: active
+  R: R/triad_nbda.R
+  tests: tests/testthat/test-triad_nbda.R
+  vignettes: vignettes/triad-nbda.Rmd
+  inflate:
+    flat_file: dev/flat_triad_nbda.Rmd
+    vignette_name: Triad NBDA
+    open_vignette: true
+    check: false
+    document: true
+    overwrite: ask
+    clean: ask
+    codecov: false
 flat_write_missing_region.Rmd:
   path: dev/flat_write_missing_region.Rmd
   state: active

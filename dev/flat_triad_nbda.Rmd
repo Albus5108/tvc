@@ -1,0 +1,322 @@
+---
+title: "flat_triad_nbda.Rmd empty"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r development, include=FALSE}
+library(testthat)
+library(STbayes)
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(posterior)
+```
+
+```{r development-load}
+# Load already included functions if relevant
+pkgload::load_all(export_all = FALSE)
+```
+
+# triad_nbda
+
+```{r development-triad_nbda}
+# Prepare the code of your function here
+```
+
+```{r function-triad_nbda}
+#' triad_nbda
+#'
+#' @param triads a tibble triads
+#' @param song_credits a tibble of song credits
+#' @param triadists a tibble of triadists as returned by \code{\link{filter_triadist}}
+#' @param floating_songs a tibble of songs without a match in song_credits
+#' @param missing_song_credits a tibble of songs not registered or without a match in Spotify playlists
+#' @param year_range a vector of integers of length 2 giving the year span of the analysis
+#' @param subdiv an double giving the subdivision of each year, default to 12.
+#'
+#' @return \code{triad_nbda} returns a list of plots
+#' @details
+#' This function fits a Bayesian STbayes model
+#' and may require several minutes to run.
+#' @export
+#'
+#' @examples
+triad_nbda <- function(
+  triads,
+  song_credits,
+  triadists,
+  floating_songs,
+  missing_song_credits,
+  year_range = c(1973, 1985),
+  subdiv = 12
+) {
+  # year_range <- c(1973, 1985)
+  # subdiv <- 12 # 365.25 for days; 12 for month; 1 for year
+  #### Import Data ####
+  unknown_artists <- floating_songs |> 
+    dplyr::inner_join(
+      dplyr::distinct(triadists, Artist, Year_First_Artist, Date_First_Artist),
+      by = dplyr::join_by(name == Artist)
+    ) |> 
+    dplyr::distinct(name, fake_ISRC, .keep_all = TRUE) |>
+    dplyr::group_by(name, Song) |> 
+    dplyr::arrange(name, Song, Album_Year) |>
+    dplyr::slice_head(n = 1L) |> 
+    dplyr::group_by(name, Year_First_Artist, Date_First_Artist) |> 
+    dplyr::summarise(Nb_Prior_Songs_Unknown = sum(Date_First_Artist > Album_Date),
+                     Career_Start = min(Album_Year),
+                     .groups = "drop") |> 
+    dplyr::arrange(dplyr::desc(Nb_Prior_Songs_Unknown)) |>
+    dplyr::filter(Nb_Prior_Songs_Unknown > 30 & Year_First_Artist - Career_Start >= 2 & Year_First_Artist >= year_range[1]) |>
+    dplyr::pull(name)
+  
+  ltmp <- build_network_artist(
+    song_credits = dplyr::bind_rows(song_credits,
+                                    missing_song_credits,
+                                    {dplyr::rename(floating_songs,
+                                                   ISRC = fake_ISRC)}),
+    triads = triads
+  )
+  data <- ltmp[["data"]]
+  byArtists <- ltmp[["byArtists"]]
+  all_edges_that_matter <- ltmp[["all_edges_that_matter"]]
+  # edges <- ltmp[["edges"]] # not used
+  rm(ltmp)
+  
+  #### Format Data ####
+  
+  
+  t0 <- max(min(byArtists[["Year_First_Artist"]]), min(all_edges_that_matter[["Album_Year"]], na.rm = TRUE), year_range[1])
+  t0 <- t0 * subdiv
+  tend <- year_range[2] * subdiv
+  # event_data <- STbayes::event_data
+  event_data <- data |>
+    dplyr::filter(!Artist %in% unknown_artists) |> 
+    dplyr::filter(Artist %in% dplyr::filter(dplyr::distinct(byArtists, Artist, Nb_Songs), Nb_Songs > 4)[["Artist"]]) |> 
+    # dplyr::filter(Artist == "Rita Coolidge") |> 
+    dplyr::ungroup() |> 
+    # dplyr::select(id = Artist, time = Year_First_Artist) |> 
+    dplyr::select(id = Artist, time = Date_First_Artist) |> 
+    dplyr::distinct(id, time) |> 
+    # dplyr::filter(id == "Bernard Estardy")
+    dplyr::mutate(time = 1970 + as.numeric(time) / 365.25) |> 
+    dplyr::mutate(time = time * subdiv) |> 
+    dplyr::mutate(time = time - t0,
+                  t_end = tend - t0, #max(time),
+                  trial = 1) |> 
+    dplyr::mutate(time = dplyr::if_else(time < 0, 0, time),
+                  time = dplyr::if_else(time > t_end, t_end + 1, time)) |> 
+    dplyr::mutate(across(.cols = c(time, t_end), .fns = ~ as.integer(round(.))))
+  
+  # dplyr::filter(event_data, id == "Rita Coolidge")
+  
+  edge_list <- all_edges_that_matter |> 
+    dplyr::filter(!is.na(Album_Date)) |> 
+    dplyr::filter(from %in% event_data[["id"]], to %in% event_data[["id"]]) |> 
+    # dplyr::distinct(ISRC, from, to, Album_Year) |>
+    dplyr::distinct(ISRC, from, to, Album_Date) |>
+    # dplyr::select(focal = from, other = to, time = Album_Year) |>
+    dplyr::select(focal = from, other = to, time = Album_Date) |>
+    dplyr::mutate(time = 1970 + as.numeric(time) / 365.25) |> 
+    dplyr::mutate(time = time * subdiv) |> 
+    dplyr::filter(time <= tend + 1) |> 
+    dplyr::mutate(trial = 1,
+                  time = time - t0) |> 
+    dplyr::mutate(time = dplyr::if_else(time < 0, 0, time)) |> 
+    dplyr::group_by(focal, other, trial, time) |> 
+    dplyr::summarise(assoc = dplyr::n(), .groups = "drop") |> 
+    ## Limit strong connexion (exemple : Barry Mann & Cynthia Weil) |> 
+    dplyr::mutate(assoc = dplyr::if_else(assoc > 10, 10, assoc)) |> 
+    dplyr::relocate(focal, other, trial, time, assoc) |> 
+    dplyr::mutate(across(.cols = c(time), .fns = ~ as.integer(round(.))))
+  
+  event_data <- event_data |> 
+    dplyr::filter(id %in% c(edge_list[["focal"]], edge_list[["other"]]))
+  
+  data_list <- STbayes::import_user_STb(event_data = event_data, 
+                                        networks = edge_list,
+                                        network_type = "undirected")
+  
+  model_full <- STbayes::generate_STb_model(data_list, gq = TRUE, est_acqTime = TRUE)
+  
+  full_fit <- STbayes::fit_STb(data_list,
+                               model_full,
+                               parallel_chains = 4,
+                               chains = 4,
+                               cores = 4,
+                               iter = 2000,
+                               refresh = 1000)
+  
+  # full_fit <- readRDS('cmdstan_saves/triad_ndba_fit.rds')
+  # full_fit <- readRDS('cmdstan_saves/triad_ndba_fit-1975-1985.rds')
+  summary_fit <- STbayes::STb_summary(
+    full_fit,
+    digits = 3
+  )
+  
+  #### Cumulative diffusion curves ####
+  # we need to store num inds per trial to refer to later
+  plot_data_obs <- event_data %>%
+    dplyr::group_by(trial) %>%
+    dplyr::mutate(n_trial = dplyr::n()) |> 
+    dplyr::ungroup() |> 
+    dplyr::filter(time > 0, time <= t_end) %>% # exclude demonstrators (time == 0) and censored (time > t_end)
+    dplyr::group_by(trial) %>%
+    dplyr::arrange(time, .by_group = TRUE) %>%
+    dplyr::mutate(
+      cum_prop = dplyr::row_number() / n_trial, # this denominator needs to be the number of individuals per trial
+      type = "observed"
+    ) %>%
+    dplyr::select(artist_id = id, trial, time, cum_prop, type) %>%
+    dplyr::ungroup()
+  
+  # add in 0,0 starting point
+  plot_data_obs <- dplyr::bind_rows(
+    plot_data_obs,
+    {plot_data_obs %>%
+      dplyr::distinct(trial) %>%
+      dplyr::mutate(time = 0, cum_prop = 0, type = "observed")}
+  ) %>%
+    dplyr::arrange(trial, time)
+  
+  ## 2. Extract the draws of estimated acquisition times
+  draws_df <- posterior::as_draws_df(full_fit$draws(variables = "acquisition_time", inc_warmup = FALSE))
+
+  # pivot longer
+  ppc_long <- draws_df %>%
+    dplyr::select(dplyr::starts_with("acquisition_time[")) %>%
+    tidyr::pivot_longer(
+      cols = dplyr::everything(),
+      names_to = c("trial", "ind"),
+      names_pattern = "acquisition_time\\[(\\d+),(\\d+)\\]",
+      values_to = "time"
+    ) %>%
+    dplyr::mutate(
+      trial = as.integer(trial),
+      ind = as.integer(ind),
+      draw = rep(1:(nrow(draws_df)), 
+                 each = length(unique(.$trial)) * length(unique(.$ind)))
+    )
+  #> Warning: Dropping 'draws_df' class as required metadata was removed.
+  
+  # thin sample for plotting
+  sample_idx <- sample(c(1:max(ppc_long$draw)), 100)
+  ppc_long <- ppc_long %>% dplyr::filter(draw %in% sample_idx)
+  
+  # same as before, we need a way to reference the number of individuals in each trial
+  ppc_long <- ppc_long %>%
+    dplyr::group_by(draw, trial) %>%
+    dplyr::mutate(n_trial = dplyr::n())
+  
+  # we also need to remove individuals predicted as censored, which
+  # have value of -1 in predicted data
+  ppc_long <- ppc_long %>%
+    dplyr::filter(time > -1)
+  
+  # build cumulative curves per draw
+  plot_data_ppc <- ppc_long %>%
+    dplyr::group_by(draw, trial, time) %>%
+    dplyr::summarise(n = dplyr::n(), n_trial = dplyr::first(n_trial), .groups = "drop") %>%
+    dplyr::group_by(draw, trial) %>%
+    dplyr::arrange(time) %>%
+    dplyr::mutate(cum_prop = cumsum(n) / n_trial)
+  
+  # add in 0,0 starting point
+  plot_data_ppc <- dplyr::bind_rows(
+    plot_data_ppc,
+    plot_data_ppc %>%
+      dplyr::distinct(trial, draw) %>%
+      dplyr::mutate(time = 0, cum_prop = 0, type = "ppc")
+  ) %>%
+    dplyr::arrange(trial, time)
+  
+  # plot it
+  p1 <- ggplot2::ggplot() +
+    ggplot2::geom_line(data = plot_data_ppc, 
+              ggplot2::aes(x = time, y = cum_prop, 
+                  group = interaction(draw, trial)), alpha = .1) +
+    ggplot2::geom_line(data = plot_data_obs, ggplot2::aes(x = time, y = cum_prop), linewidth = 1) +
+    ggplot2::labs(x = "Time", y = "Cumulative proportion informed", color = "Trial") +
+    ggplot2::theme_minimal()
+  
+  #### Estimated vs. observed acquisition times ####
+  acqdata <- STbayes::extract_acqTime(full_fit, data_list) |> 
+    tibble::as_tibble() |> 
+    dplyr::bind_cols(dplyr::select(dplyr::arrange(event_data, time), artist_id = id))
+  
+  p2 <- acqdata |>
+    ggplot2::ggplot() +
+    ggplot2::aes(
+      x = (observed_time + t0) / subdiv,
+      y = (median_time + t0) / subdiv
+    ) +
+    ggplot2::geom_segment(
+      ggplot2::aes(
+        x = (observed_time + t0) / subdiv,
+        xend = (observed_time + t0) / subdiv, 
+        y = (median_time + t0) / subdiv,
+        yend = (observed_time + t0) / subdiv
+      ),
+      color = "red",
+      alpha = 0.3) +
+    ggplot2::geom_point(size = 2) +
+    ggplot2::geom_abline(intercept = 0, slope = 1, color = "black", linetype = "dashed") +
+    ggplot2::geom_text(ggplot2::aes(label = artist_id)) +
+    ggplot2::labs(x = "Observed time", y = "Estimated time") +
+    ggplot2::theme_minimal()
+  
+  lout <- list(
+    fit = full_fit,
+    summary = summary_fit,
+    cumulative_diffusion = p1,
+    acquisition_times = p2
+  )
+  return(lout)
+}
+```
+
+```{r examples-triad_nbda, eval=FALSE}
+results_nbda <- triad_nbda(
+  triads,
+  song_credits,
+  triadists,
+  floating_songs,
+  missing_song_credits,
+  year_range = c(1973, 1985),
+  subdiv = 12
+)
+
+STbayes::STb_save(
+  results_nbda[["fit"]],
+  output_dir = "cmdstan_saves",
+  name = paste0(format(Sys.Date(), "%Y%m%d"), "-triad_ndba_fit-5TVC-1975-1985")
+)
+
+ggplot2::ggsave(
+  plot = results_nbda[["cumulative_diffusion"]],
+  glue::glue("../{format(Sys.Date(), format = '%Y%m%d')}-cumulative-diffusion-curves-TVC-1974-1985.png"),
+  width = 29.7/2, height = 21/2
+)
+
+ggplot2::ggsave(
+  plot = results_nbda[["acquisition_times"]],
+  glue::glue("../{format(Sys.Date(), format = '%Y%m%d')}-estimated-first-TVC-1974-1985.pdf"),
+  width = 29.7/2, height = 21/2
+)
+```
+
+```{r tests-triad_nbda}
+testthat::test_that("triad_nbda works", {
+  testthat::expect_true(inherits(triad_nbda, "function"))
+})
+```
+
+
+```{r development-inflate, eval=FALSE}
+# Run but keep eval=FALSE to avoid infinite loop
+# Execute in the console directly
+fusen::inflate(flat_file = "dev/flat_triad_nbda.Rmd", vignette_name = "Triad NBDA", check = FALSE)
+```
+

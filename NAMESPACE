@@ -22,6 +22,7 @@ export(scale_colour_tvc_d)
 export(scale_fill_tvc_c)
 export(scale_fill_tvc_d)
 export(triad_coverage)
+export(triad_nbda)
 export(write_missing_region)
 export(write_missing_triade)
 importFrom(attempt,
