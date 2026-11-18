@@ -16,3 +16,5 @@ default:
     client_secret: "xxx"
     songs_sheet: Songs
     triade_sheet: Triade
+  discogs:
+    client_secret: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

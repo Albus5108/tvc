@@ -62,6 +62,7 @@ compute_population_estimates <- function(update = TRUE, group_year = 1L) {
 
   clean_countries <- tibble::tibble(
     file = list.files(path = system.file(package = "tvc", "extdata"),
+                      pattern = ".csv$",
                       full.names = TRUE)
   ) %>%
     ## Csv files from https://www.macrotrends.net/datasets/global-metrics/countries/

@@ -61,7 +61,8 @@ get_spotify_api_triad_playlists <- function(songs = NULL){
   # }
   
   songs <- songs %>%
-    tidyr::unnest(cols = songs)
+    tidyr::unnest(cols = songs) |> 
+    fix_album_date()
   
   if(!is.null(songs0)) {
     songs <- songs0 |> 

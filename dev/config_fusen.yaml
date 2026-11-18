@@ -76,8 +76,10 @@ flat_get_spotify_api_playlist.Rmd:
   - R/auth_spotify.R
   - R/get_spotify_api_playlist.R
   - R/get_spotify_api_triad_playlists.R
+  - R/query_playlist.R
   tests:
   - tests/testthat/test-auth_spotify.R
+  - tests/testthat/test-query_playlist.R
   - tests/testthat/test-get_spotify_api_playlist.R
   - tests/testthat/test-get_spotify_api_triad_playlists.R
   vignettes: vignettes/get-from-spotify.Rmd
@@ -110,14 +112,31 @@ flat_parse_triade.Rmd:
   state: active
   R:
   - R/clean_song_title.R
+  - R/fix_album_date.R
   - R/parse_triade.R
   tests:
   - tests/testthat/test-clean_song_title.R
   - tests/testthat/test-parse_triade.R
+  - tests/testthat/test-fix_album_date.R
   vignettes: vignettes/parse_triade.Rmd
   inflate:
     flat_file: dev/flat_parse_triade.Rmd
     vignette_name: parse_triade
+    open_vignette: true
+    check: false
+    document: true
+    overwrite: ask
+    clean: ask
+    codecov: false
+flat_plot_tvc_album_cover_timeline.Rmd:
+  path: dev/flat_plot_tvc_album_cover_timeline.Rmd
+  state: active
+  R: R/plot_tvc_album_cover_timeline.R
+  tests: tests/testthat/test-plot_tvc_album_cover_timeline.R
+  vignettes: vignettes/tvc-album-cover-timeline.Rmd
+  inflate:
+    flat_file: dev/flat_plot_tvc_album_cover_timeline.Rmd
+    vignette_name: TVC Album Cover Timeline
     open_vignette: true
     check: false
     document: true
@@ -150,6 +169,25 @@ flat_plot_tvc_network.Rmd:
     vignette_name: plot_tvc_network
     open_vignette: true
     check: true
+    document: true
+    overwrite: ask
+    clean: ask
+    codecov: false
+flat_plot_tvc_network_artist.Rmd:
+  path: dev/flat_plot_tvc_network_artist.Rmd
+  state: active
+  R:
+  - R/build_network_artist.R
+  - R/plot_tvc_network_artist.R
+  tests:
+  - tests/testthat/test-build_network_artist.R
+  - tests/testthat/test-plot_tvc_network_artist.R
+  vignettes: vignettes/plot-artist-network.Rmd
+  inflate:
+    flat_file: dev/flat_plot_tvc_network_artist.Rmd
+    vignette_name: Plot Artist Network
+    open_vignette: true
+    check: false
     document: true
     overwrite: ask
     clean: ask

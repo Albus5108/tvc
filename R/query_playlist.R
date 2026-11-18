@@ -4,9 +4,11 @@
 #' 
 #' Description
 #' 
-#' @return
+#' @return \code{query_playlist} returns a tibble with spotify playlist (Song, Artist, etc.)
 #' 
 #' @noRd
+#' @importFrom httr RETRY add_headers stop_for_status content
+#' @importFrom jsonlite fromJSON
 #' @examples
 #' query_playlist()
 query_playlist <- function(url, params) {

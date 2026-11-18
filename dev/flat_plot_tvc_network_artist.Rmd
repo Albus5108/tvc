@@ -14,6 +14,207 @@ library(testthat)
 pkgload::load_all(export_all = FALSE)
 ```
 
+# build_network_artist
+    
+```{r development-build_network_artist}
+# You can prepare the code of the build_network_artist() function here
+```
+  
+```{r function-build_network_artist}
+#' Build Artist Network
+#' 
+#' Useful for \code{\link{plot_tvc_network_artist}}.
+#' 
+#' @param song_credits a tibble as returned by \code{\link{parse_triade}}
+#' @param triads a tibblespecifying the instrument that played the triad
+#'
+#' @return \code{build_network_artist} returns a list "data", "byArtists", "all_edges_that_matter", "edges".
+#' 
+#' @noRd
+build_network_artist <- function(song_credits, triads){
+  # data |> 
+  #   dplyr::filter(ISRC == "CAC229000010")
+  
+  # song_credits |>
+  #   dplyr::group_by(ISRC) |> 
+  #   dplyr::filter(all(c("Jay Graydon", "David Foster") %in% name)) |> View()
+  # data |>
+  #   dplyr::group_by(ISRC) |> 
+  #   dplyr::filter(all(c("Jay Graydon", "David Foster") %in% Artist)) |> View()
+  
+  # song_credits |>
+  #   dplyr::filter(name == "John McCurry") |> View()
+  
+  # data |>
+  #   dplyr::filter(Artist == "Peter Wood (2)") |> View()
+  
+  # song_credits |>
+  #   dplyr::filter(ISRC == "USSM18600632") |> View()
+  triadists <- filter_triadist(song_credits = song_credits, triads = triads)
+  # triadists |> 
+  #   dplyr::filter(Artist == "John McCurry")
+  tvc_groups <- song_credits |> 
+    dplyr::group_by(ISRC) |> 
+    dplyr::summarise(
+      Group = dplyr::case_when(
+        all(is.na(triad)) ~ NA,
+        any(triad %in% "1 7") ~ "TVC",
+        TRUE ~ "no TVC")
+    )
+  data <- song_credits |> 
+    dplyr::filter(name %in% triadists[["Artist"]]) |> 
+    ## Final Formatting
+    dplyr::select(c(ISRC, name, role, Album_Year, Album_Date)) |> 
+    dplyr::distinct(ISRC, name, .keep_all = TRUE) |>
+    dplyr::rename(Artist = name) |> 
+    dplyr::left_join(dplyr::distinct(triadists, Artist, Year_First_Artist, Date_First_Artist),
+                     by = dplyr::join_by(Artist)) |> 
+    dplyr::left_join(tvc_groups,
+                     by = dplyr::join_by(ISRC))
+  
+  data <- data |> 
+    ## Collapse Artists who shared everything together (exemple: Orlando - Dalida)
+    # dplyr::filter(Artist %in% c("Dalida", "Orlando") | grepl("Orlando", Artist)) |> 
+    dplyr::group_by(Artist, Date_First_Artist) |> 
+    dplyr::mutate(hash_ISRC = digest::digest(head(sort(unique(ISRC[!is.na(Group) & Group == "TVC"])), 10))) |> 
+    dplyr::group_by(hash_ISRC, Date_First_Artist) |> 
+    # dplyr::filter(length(unique(Artist)) >= 2) |>
+    # dplyr::distinct(hash_ISRC, Artist, Year_First_Artist) |> 
+    # dplyr::arrange(hash_ISRC) |> View()
+    dplyr::mutate(Artist = paste(unique(Artist), collapse = " - ")) |> 
+    # dplyr::filter(grepl("Albhy Galuten", Artist), ISRC %in% c("USSM10209148"))
+    dplyr::ungroup()
+    
+  # dplyr::anti_join(data2, data, by = dplyr::join_by(ISRC, Artist)) |> View()
+  ## Old way
+  # data <- song_credits |>
+  #   filter_triadist(triads = triads) |> 
+  #   ## Idee Baptiste : les Main Artist et Producteurs sont insignifiants, a approfondir
+  #   # dplyr::filter(!role %in% c("Main Artist")) |>
+  #   # dplyr::filter(!role %in% c("Producer", "Executive-Producer", "Co-producer")) |>
+  #   ## Final Formatting
+  #   dplyr::distinct(ISRC, Artist, .keep_all = TRUE) |> 
+  #   # dplyr::filter(ISRC == "HKA610400625") |> View()
+  #   # dplyr::filter(ISRC == "GB77R1400079") |> 
+  #   # dplyr::filter(ISRC == "USSM10209148") |>
+  #   dplyr::select(-c(Nb_Songs_Artist, Nb_Album_Artist, Nb_Artist_Artist,
+  #                    item.album.name, Instrument_Discogs, is_TVC_Instrument))
+  
+  attempt::stop_if_not(nrow(dplyr::filter(data, ISRC == "LivingTogetherFire&Rain", Artist == "David Foster")) == 1L)
+  attempt::stop_if_not(nrow(dplyr::filter(data, ISRC == "GBBLG7700256", Artist == "Ray Parker Jr.")) == 1L)
+  attempt::stop_if_not(nrow(dplyr::filter(data, ISRC == "ComeOnHomeCountryBoyTheKeaneBrothers", Artist == "Tom Keane")) == 1L)
+  attempt::stop_if_not(nrow(dplyr::filter(data, ISRC == "QZF391800009", Artist == "Michael Landau")) == 1L)
+  attempt::stop_if_not(nrow(dplyr::filter(data, ISRC == "GB77R1400079", Artist == "David Foster")) == 1L)
+  attempt::stop_if_not(nrow(dplyr::filter(data, Artist == "Peter Wood (2)")) >= 2L)
+  attempt::stop_if_not(nrow(dplyr::filter(data, ISRC == "USRC18702968", Artist == "Bill Cuomo")) == 1L)
+  attempt::stop_if_not(nrow(dplyr::filter(data, Artist == "Gene Page")) >= 2L)
+  attempt::stop_if_not(nrow(dplyr::filter(data, Artist == "Peter Wood (2)", ISRC %in% c("GB01A0600664", "USSM18600632"))) == 2L)
+  ## John McCurry is not the main triadist in True Colors and the TVC in Poison is questionable
+  # attempt::stop_if_not(nrow(dplyr::filter(data, Artist == "John McCurry", ISRC %in% c("USSM18900004", "USSM18600632"))) >= 2L)
+  attempt::stop_if_not(nrow(dplyr::filter(data, grepl("Albhy Galuten", Artist), ISRC %in% c("USSM10209148"))) >= 1L)
+  ## With Main Artist
+  # attempt::stop_if_not(nrow(dplyr::filter(data, Artist %in% c("Sheena Easton", "Michael Landau"), ISRC == "QZF391800009")) == 2L)
+  # attempt::stop_if_not(nrow(dplyr::filter(data,  ISRC == "GB77R1400079", Artist == "George Harrison")) == 1L)
+  
+  #### Calcul des liens ####
+  byArtists <- data %>% 
+    dplyr::group_by(Artist) %>% 
+    dplyr::mutate(Nb_Songs = length(unique(ISRC[Group == "TVC"])),
+                  Nb_Triads = length(unique(ISRC[Group == "TVC"]))) |> 
+    dplyr::arrange(dplyr::desc(Nb_Songs))
+  edges <- data %>%
+    # dplyr::filter(ISRC %in% c("USWB10202147", "USWB10202152", "USAM18300301"),
+    #               Artist %in% c("Robbie Buchanan", "Michael Landau")) |>
+    dplyr::select(Artist, ISRC, Group,
+                  Album_Year, Album_Date,
+                  Year_First_Artist, Date_First_Artist) %>%
+    # dplyr::distinct()
+    dplyr::full_join(x = ., y = .,
+                     by = dplyr::join_by(ISRC, Group, Album_Year, Album_Date),
+                     relationship = "many-to-many",
+                     suffix = c("_from", "_to")) %>%
+    ## Will we need both <--> edges in the end ?
+    ## Adapt with Dates instead of Years
+    dplyr::mutate(
+      Need_Both = Album_Year > Year_First_Artist_from &
+        Album_Year > Year_First_Artist_to &
+        Year_First_Artist_from != Year_First_Artist_to,
+      from_is_older = Year_First_Artist_from < Year_First_Artist_to,
+      from_comes_first = purrr::map2_lgl(Artist_from, Artist_to, .f = ~ head(sort(c(.x, .y)), 1L) == .x)
+    ) |> 
+    dplyr::select(-c(dplyr::contains("Year_First_Artist_"), dplyr::contains("Date_First_Artist_"))) |> 
+    ## Group
+    dplyr::rename(from = Artist_from,
+                  to = Artist_to) %>%
+    dplyr::filter(from != to) %>%
+    dplyr::relocate(Group, from, to)
+  
+  edges <- edges %>%
+    dplyr::mutate(id = 1:dplyr::n())
+  
+  edges2 <- edges
+  edges2$from <- edges$to
+  edges2$to <- edges$from
+  ## edges2$from_is_older is wrong on purpose
+  ## edges2$from_comes_first is wrong on purpose
+  
+  tmp <- dplyr::bind_rows(edges, edges2) %>%
+    # dplyr::group_by(Group, from, to) %>%
+    # dplyr::arrange(Group, from, to, id) %>%
+    # dplyr::filter(ISRC == "GBCCS1400011") |>
+    # dplyr::filter(ISRC == "GBAKW0100140") |>
+    dplyr::group_by(Group, ISRC, from, to) %>%
+    dplyr::arrange(Group, ISRC, from, to) |> 
+    dplyr::arrange(Group, ISRC, from, to,
+                   ## First Test (Meaningful for timeline graph)
+                   dplyr::desc(from_is_older),
+                   # Arbitrary
+                   dplyr::desc(from_comes_first),
+                   id) %>%
+    dplyr::slice(1)
+  tmp$id %>% unique() %>% length()
+  
+  all_edges_that_matter <- edges |>
+    # dplyr::filter(ISRC == "GBCCS1400011") |> 
+    # dplyr::filter(ISRC == "GBAKW0100140") |>
+    dplyr::filter(id %in% tmp$id | Need_Both) %>%
+    dplyr::select(-id) |> 
+    dplyr::distinct(from, to, ISRC, .keep_all = TRUE) |> 
+    dplyr::select(-from_is_older)
+  
+  # all_edges_that_matter |> 
+  #   dplyr::filter(from %in% c("Humberto Gatica", "David Foster"), to %in% c("Humberto Gatica", "David Foster"))
+  
+  edges <- edges %>%
+    # dplyr::filter(ISRC == "GBCCS1400011") |>
+    dplyr::filter(id %in% tmp$id) %>%
+    dplyr::select(-id) |> 
+    dplyr::select(-from_is_older, -from_comes_first)
+  # edges |> 
+  #   dplyr::filter(from %in% c("David Foster", "JJ Lin") | to %in% c("David Foster", "JJ Lin"),
+  #                 Album_Year %in% c(1975, 2003, 2013, 2020)) |> 
+  #   dplyr::arrange(Album_Year)
+  
+  lout <- list(
+    "data" = data,
+    "byArtists" = byArtists,
+    "all_edges_that_matter" = all_edges_that_matter,
+    "edges" = edges
+  )
+  return(lout)
+}
+```
+  
+```{r example-build_network_artist}
+build_network_artist()
+```
+  
+```{r tests-build_network_artist}
+test_that("build_network_artist works", {
+  expect_true(inherits(build_network_artist, "function")) 
+})
+```
+
 # plot_tvc_network_artist
 
 ```{r development-plot_tvc_network_artist}
@@ -23,196 +224,322 @@ pkgload::load_all(export_all = FALSE)
 ```{r function-plot_tvc_network_artist}
 #' Plot tvc songs network
 #'
-#' @param data a tibble as returned by \code{\link{parse_triade}}
+#' @param song_credits a tibble as returned by \code{\link{parse_triade}}
+#' @param triads a tibblespecifying the instrument that played the triad
+#' @param timeline a boolean specifying if the network should be plot on a timeline
+#' @param year_range a numeric vector of length 2
 #'
 #' @return \code{plot_tvc_network} returns a network plot
 #' @export
 #'
 #' @examples
-plot_tvc_network_artist <- function(data) {
-  data <- data %>% 
-    dplyr::filter(!is.na(Degree),
-                  triad == "1 7") %>% 
-    ## On garde seulement les artistes qui utilisent massivement
-    dplyr::group_by(Artist) %>% 
-    dplyr::filter(length(unique(ISRC)) > 1L) %>% 
-    dplyr::ungroup()
-  #### Calcul des liens ####
-  byArtists <- data %>% 
-    dplyr::group_by(Artist) %>% 
-    dplyr::mutate(Nb_Songs = length(unique(ISRC)),
-                  Nb_Triads = dplyr::n())
-  edges <- dplyr::bind_rows(
-    ## Harmonie Sous-Jacente
-    data %>%
-      dplyr::filter(!is.na(`Harmonie Sous-Jacente`)) %>%
-      dplyr::mutate(Group = paste("Harmonie sous-Jacente:", `Harmonie Sous-Jacente`)) %>%
-      dplyr::distinct(Artist, Group) %>%
-      dplyr::full_join(x = ., y = .,
-                       by = dplyr::join_by(Group),
-                       relationship = "many-to-many",
-                       suffix = c("_from", "_to")) %>%
-      dplyr::rename(from = Artist_from,
-                    to = Artist_to) %>%
-      dplyr::filter(from != to),
-    ## Degre de la note mediane
-    data %>%
-      dplyr::filter(!is.na(Degree)) %>%
-      dplyr::mutate(Group = paste("Degr\u00e9 de la note m\u00e9diane:", Degree)) %>%
-      dplyr::distinct(Artist, Group) %>%
-      dplyr::full_join(x = ., y = .,
-                       by = dplyr::join_by(Group),
-                       relationship = "many-to-many",
-                       suffix = c("_from", "_to")) %>%
-      dplyr::rename(from = Artist_from,
-                    to = Artist_to) %>%
-      dplyr::filter(from != to),
-    ## Type / usage
-    data %>%
-      dplyr::filter(!is.na(Type)) %>%
-      dplyr::mutate(Group = paste("Type:", Type)) %>%
-      dplyr::distinct(Artist, Group) %>%
-      dplyr::full_join(x = ., y = .,
-                       by = dplyr::join_by(Group),
-                       relationship = "many-to-many",
-                       suffix = c("_from", "_to")) %>%
-      dplyr::rename(from = Artist_from,
-                    to = Artist_to) %>%
-      dplyr::filter(from != to),
-    ## Mode Majeur/Mineur
-    data %>%
-      dplyr::filter(!is.na(Mode)) %>%
-      ## Le groupe "Majeur" est encombrant
-      dplyr::filter(!Mode %in% "Majeur") %>%
-      dplyr::mutate(Group = paste("Mode:", Mode)) %>%
-      dplyr::distinct(Artist, Group) %>%
-      dplyr::full_join(x = ., y = .,
-                       by = dplyr::join_by(Group),
-                       relationship = "many-to-many",
-                       suffix = c("_from", "_to")) %>%
-      dplyr::rename(from = Artist_from,
-                    to = Artist_to) %>%
-      dplyr::filter(from != to),
-    ## Instrument = La Voix ou La Guitare
-    data %>%
-      dplyr::filter(!is.na(Instrument)) %>%
-      ## Le groupe "Majeur" est encombrant
-      dplyr::filter(Instrument %in% c("Vocals", "Muted Trumpet")) %>%
-      dplyr::mutate(Group = paste("Instrument:", Instrument)) %>%
-      dplyr::distinct(Artist, Group) %>%
-      dplyr::full_join(x = ., y = .,
-                       by = dplyr::join_by(Group),
-                       relationship = "many-to-many",
-                       suffix = c("_from", "_to")) %>%
-      dplyr::rename(from = Artist_from,
-                    to = Artist_to) %>%
-      dplyr::filter(from != to),
-    ## Genre
-    data %>%
-      dplyr::rename(Genres = genres) %>%
-      # dplyr::select(Genres) %>%
-      ## Les triades etiquetees "Son Pop Loce 80's" sont forcement "Pop"
-      # dplyr::mutate(`Parent Genres` = dplyr::if_else(is.na(`Parent Genres`) & is.na(`Genres`) & Type == "son pop love 80s",
-      #                                                "Pop",
-      #                                                `Parent Genres`)) %>%
-      ## On rassemble Genre et Genre Parents
-      # dplyr::mutate(Genres = paste(Genres, `Parent Genres`, sep = ", ")) %>%
-      dplyr::filter(purrr::map_lgl(.x = Genres, .f =~ length(.x) > 0L)) %>%
-      dplyr::distinct(Artist, Genres) %>%
-      tidyr::unnest(cols = Genres) %>%
-      dplyr::rename(Genre = Genres) %>%
-      ## On supprime les genres NA
-      # dplyr::filter(!(is.na(Genre) | Genre == "NA")) %>%
-      ## On supprime les Genres qui ne rassemble pas de chansons
-      dplyr::group_by(Genre) %>%
-      dplyr::mutate(Nb_Chansons = dplyr::n()) %>%
-      dplyr::filter(dplyr::n() > 1L) %>%
-      ## Garder le genre le plus evocateur pour une chansons (des genres sont redondants entre eux)
-      dplyr::group_by(Artist) %>%
-      dplyr::arrange(dplyr::desc(Nb_Chansons)) %>%
-      dplyr::slice(1) %>%
-      dplyr::mutate(Group = paste("Genre:", Genre)) %>%
-      dplyr::distinct(Artist, Group) %>%
-      dplyr::full_join(x = ., y = .,
-                       by = dplyr::join_by(Group),
-                       relationship = "many-to-many",
-                       suffix = c("_from", "_to")) %>%
-      dplyr::rename(from = Artist_from,
-                    to = Artist_to) %>%
-      dplyr::filter(from != to)
-  ) %>%
-    dplyr::relocate(Group, from, to)
+plot_tvc_network_artist <- function(song_credits, triads, timeline = TRUE, year_range = NULL) {
   
-  edges <- edges %>%
-    dplyr::mutate(id = 1:dplyr::n())
-  
-  edges2 <- edges
-  edges2$from <- edges$to
-  edges2$to <- edges$from
-  
-  tmp <- dplyr::bind_rows(edges, edges2) %>%
-    dplyr::group_by(Group, from, to) %>%
-    dplyr::arrange(Group, from, to, id) %>%
-    dplyr::slice(1)
-  tmp$id %>% unique() %>% length()
-  
-  edges <- edges %>%
-    dplyr::filter(id %in% tmp$id) %>%
-    dplyr::select(-id)
+  ltmp <- build_network_artist(song_credits = song_credits, triads = triads)
+  data <- ltmp[["data"]]
+  byArtists <- ltmp[["byArtists"]]
+  all_edges_that_matter <- ltmp[["all_edges_that_matter"]]
+  edges <- ltmp[["edges"]]
   
   #### vertices and edges ####
   
-    bands <- list(
-      # Les sommets = les chansons
-      "vertices" = tibble::tibble(Artist = c(edges$from, edges$to)) %>%
-        dplyr::distinct(Artist) %>%
-        ## Label et Size
-        dplyr::left_join(dplyr::distinct(byArtists, Artist, Nb_Triads), # Nb_Songs
-                         by = dplyr::join_by(Artist)) %>%
-        dplyr::rename(size = Nb_Triads) %>% # Nb_Songs 
-        dplyr::mutate(rownames = Artist) %>%
-        dplyr::rename(label = Artist) %>%
-        tibble::column_to_rownames(var = "rownames"),
-      # Liens
-      "edges" = edges
-    )
+  bands <- list(
+    # Les sommets = les artistes
+    "vertices" = tibble::tibble(Artist = c(edges$from, edges$to)) %>%
+      dplyr::distinct(Artist) %>%
+      ## Label et Size
+      dplyr::left_join(dplyr::distinct(byArtists, Artist, Nb_Triads,
+                                       Year_First_Artist, Date_First_Artist), # Nb_Songs
+                       by = dplyr::join_by(Artist)) %>%
+      dplyr::rename(size = Nb_Triads) %>% # Nb_Songs 
+      dplyr::mutate(rownames = Artist) %>%
+      dplyr::rename(label = Artist) %>%
+      tibble::column_to_rownames(var = "rownames"),
+    # Liens
+    "edges" = edges |> 
+      # tidyr::nest(vehicle = c(ISRC, Album_Year, Need_Both))
+      dplyr::distinct(from, to, Group)
+  )
   
   #### Main Grouping variables ####
-  # mainGroups <- names(head(sort(table(bands$edges$Group), decreasing = TRUE), n = 6))
+  mainGroups <- c("TVC", "no TVC", NA)
   ## Degrees
-  mainGroups <- unique(grep(pattern = "^Degr", x = bands$edges$Group, value = TRUE))
-  suffixGroup <- "Degre-note-mediane"
+  # mainGroups <- unique(grep(pattern = "^Degr", x = bands$edges$Group, value = TRUE))
+  # suffixGroup <- "Degre-note-mediane"
   ## Harmonie
   # mainGroups <- unique(grep(pattern = "^Harmonie", x = bands$edges$Group, value = TRUE))
   # suffixGroup <- "Harmonie-Sous-Jacente"
   
   #### Network plot ####
-  fb.igra <- igraph::graph_from_data_frame(
-    d = bands$edges[, c("from", "to")],
-    directed = FALSE
-  )
-  igraph::V(fb.igra)$conf <- bands$vertices[igraph::V(fb.igra)$name, "label"]
-  igraph::V(fb.igra)$size <- bands$vertices[igraph::V(fb.igra)$name, "size"]
-  igraph::E(fb.igra)$Group <- bands$edges$Group
-  # E(fb.igra)$Admin <- bands$edges$Admin
-  # E(fb.igra)$lty=ifelse(E(fb.igra)$Admin == 1, 1, 2)
+  attempt::stop_if_any(bands[["edges"]]$from == bands[["edges"]]$to)
+  attempt::stop_if_any(is.na(bands[["edges"]]$from))
+  attempt::stop_if_any(is.na(bands[["edges"]]$to))
+  attempt::stop_if_any(paste(bands[["edges"]]$from, bands[["edges"]]$to) %in% paste(bands[["edges"]]$to, bands[["edges"]]$from))
+  # paste(bands[["edges"]]$from, bands[["edges"]]$to)[paste(bands[["edges"]]$from, bands[["edges"]]$to) %in% paste(bands[["edges"]]$to, bands[["edges"]]$from)]
   
-  #Tips: ctrl+shift+A to reformat
-  set.seed(3212019)
-  pggnetwork <- ggplot2::ggplot(
-    ggnetwork::ggnetwork(# provide the underlying dataframe
+  ## Year
+  if(timeline) {
+    if(TRUE) {
+      ## Coordinate from grid layout
+      # coords <- igraph::layout_on_grid(graph = fb.igra,
+      #                                  width = 1
+      #                                  ) |> 
+      #   tibble::as_tibble(.name_repair = ~ c('x', 'y')) |> 
+      #   dplyr::mutate(name = igraph::V(fb.igra)$name) |> 
+      #   dplyr::select(-x) |> 
+      #   ## Normalize y in [0; 1]
+      #   dplyr::mutate(y = (y - min(y)) / (max(y) - min(y)))
+      
+      ## Coordinates custom
+      if (TRUE) {
+        # as.numeric(igraph::neighbors(fb.igra, v = igraph::V(fb.igra)[["David Foster"]], mode = "all")) |> hist()
+        d <- dplyr::bind_rows(
+            ## Real Data
+            {
+              bands[["edges"]] |> 
+                dplyr::mutate(weight = 1)
+            },
+            ## Years
+            {
+              bands[["vertices"]] |> 
+                tibble::as_tibble() |> 
+                dplyr::summarise(from = list(seq(min(Year_First_Artist) -10, max(Year_First_Artist) + 10))) |> 
+                tidyr::unnest(from) |> 
+                dplyr::mutate(x_from_init = (from - min(from))/(max(from) - min(from))) |> 
+                dplyr::mutate(to = from + 1) |> 
+                dplyr::mutate(dplyr::across(c(from, to), as.character)) |> 
+                dplyr::mutate(Group = "Years",
+                              weight = 1e2)
+            },
+            ## Anchor Artist in Year
+            {
+              bands[["vertices"]] |> 
+                tibble::as_tibble() |> 
+                dplyr::rename(from = Year_First_Artist,
+                              to = label) |> 
+                dplyr::select(from, to) |> 
+                dplyr::mutate(x_from_init = (from - min(from))/(max(from) - min(from))) |> 
+                dplyr::mutate(from = as.character(from)) |> 
+                dplyr::mutate(Group = "Anchor",
+                              weight = 1.1) |> 
+                dplyr::mutate(weight = dplyr::if_else(to == "David Foster", 1e10, weight))
+            }
+          )
+        custom_graph <- igraph::graph_from_data_frame(
+          d = d,
+          directed = FALSE
+        )
+        init_coords <- tibble::tibble(
+          from = igraph::V(custom_graph)$name
+        ) |> 
+          dplyr::left_join(dplyr::select(dplyr::distinct(d, from, .keep_all = TRUE), from, x_from_init),
+                           by = dplyr::join_by(from)) |> 
+          dplyr::left_join(dplyr::select(dplyr::distinct(d, to, .keep_all = TRUE), to, x_from_init),
+                           by = dplyr::join_by(from == to)) |> 
+          dplyr::mutate(x = dplyr::if_else(is.na(x_from_init.x), x_from_init.y, x_from_init.x),
+                        x = dplyr::if_else(is.na(x), runif(dplyr::n()), x)) |>
+          dplyr::select(-c(x_from_init.x, x_from_init.y)) |> 
+          dplyr::mutate(y = dplyr::if_else(grepl("[0-9]{4}", from),
+                                           runif(dplyr::n()), #0.5,
+                                           runif(dplyr::n()))) |> 
+          dplyr::mutate(y = dplyr::if_else(from %in% c("David Foster",
+                                                       "1974", "1975", "1976",
+                                                       "1960", "1961", "1962",
+                                                       "2028", "2029", "2030"),
+                                           0.5,
+                                           y))
+        custom_network_data <- ggnetwork::ggnetwork(
+          custom_graph, #input: network object
+          layout = igraph::with_fr(weight = igraph::E(custom_graph)$weight,
+                                   coords = as.matrix(init_coords[, c("x", "y")]))
+        ) |> 
+          tibble::as_tibble()
+        
+        if(FALSE) {
+          ggplot2::ggplot(
+          custom_network_data,
+          #can pass layout parameter
+          ggplot2::aes(x, y, xend = xend, yend = yend)
+        ) + #mapping for edges
+          ggnetwork::geom_edges(ggplot2::aes(#linetype = as.factor(Admin),
+            color = Group),
+            #arrow = arrow(length = unit(6, "pt"), type = "closed") #if directed
+            # color = "grey50",
+            # data = function(x) { x[ x$Group %in% mainGroups, ]},
+            curvature = 0.1,
+            alpha = 0.5
+          ) +
+          ggnetwork::geom_nodes(#ggplot2::aes(size = size),
+                                # size = 3, color = conf
+                                alpha=0.5) +
+          ggnetwork::geom_nodes(fill = "#E74C3C", #"#D64545", "#C23B22", "red",
+                                color = "black",
+                                size = 5, shape = 21,
+                                data = function(x) { x[ x$name == "Vanessa Carlton", ]}) +
+          ggplot2::guides(alpha = "none") +
+          ggnetwork::geom_nodetext(ggplot2::aes(label = gsub(" - ", ", ", insert_line_breaks_adaptive(gsub(" ?\\([0-9]+\\)", "", name)))),
+                                   size = 2.5, nudge_y = .02) + # *.25
+          ggplot2::scale_linetype_manual(values = c(2, 1)) +
+          ggplot2::guides(linetype = "none",
+                          colour = "none",
+                          size = "none") +
+          ggplot2::labs(y = "") +
+          ggplot2::theme(
+            panel.grid.minor = ggplot2::element_blank(), #remove minor gridlines
+            legend.background = ggplot2::element_rect(fill='transparent'), #transparent legend bg
+            legend.box.background = ggplot2::element_rect(fill='transparent') #transparent legend panel
+          )
+        }
+        
+        coords_raw <- igraph::layout_with_fr(graph = custom_graph,
+                                         weight = igraph::E(custom_graph)$weight,
+                                         coords = as.matrix(init_coords[, c("x", "y")])) |> 
+          tibble::as_tibble(.name_repair = ~ c('x', 'y')) |> 
+          dplyr::mutate(name = igraph::V(custom_graph)$name)
+        anchors <- coords_raw |> 
+          dplyr::filter(grepl("^[0-9]{4}$", name)) |> 
+          dplyr::mutate(Year_First_Artist = as.numeric(name)) |> 
+          dplyr::select(-name)
+        coords <- coords_raw |>
+          ## Remove Anchors
+          dplyr::filter(!grepl("^[0-9]{4}$", name)) |> 
+          ## Compensate Year y offset to 0.5
+          dplyr::left_join(bands[["vertices"]], by = c("name" = "label")) |> 
+          dplyr::left_join(anchors, by = dplyr::join_by(Year_First_Artist),
+                           suffix = c("", "_year")) |> 
+          dplyr::mutate(y = y + (0.5 - y_year)) |> 
+          dplyr::select(-c(size, Year_First_Artist, Date_First_Artist, x_year, y_year)) |> 
+          ## Transform Coordinates
+          dplyr::select(-x) |> 
+          ## Normalize y in [0; 1]
+          dplyr::mutate(y = (y - min(y)) / (max(y) - min(y)))
+        
+        
+      }
+      
+      
+      
+      
+      # coords <- igraph::layout_with_fr(graph = fb.igra) |> 
+      #   tibble::as_tibble(.name_repair = ~ c('x', 'y')) |> 
+      #   dplyr::mutate(name = igraph::V(fb.igra)$name) |> 
+      #   ## Transform Coordinates
+      #   ## Compute alternate y
+      #   dplyr::mutate(y = sqrt(x^2 + y^2) * atan2(y, x)) |> 
+      #   dplyr::select(-x) |> 
+      #   ## Normalize y in [0; 1]
+      #   dplyr::mutate(y = (y - min(y)) / (max(y) - min(y)))
+      
+      network_data2 <- all_edges_that_matter |>
+        # dplyr::filter(Album_Year %in% c(1964, 1966))
+        # dplyr::filter(ISRC == "USUG12000137") |> 
+        # dplyr::filter(ISRC == "ComeOnHomeCountryBoyTheKeaneBrothers") |> 
+        # dplyr::filter(name %in% c("Ron Fair", "Vanessa Carlton", "Samantha Mumba", "Christina Aguilera")) |>
+        ## Remove collaboration ulterieures des memes personnes
+        dplyr::mutate(from_to = purrr::map2_chr(from, to, ~ paste(sort(c(.x, .y)), collapse = "--"))) |> 
+        dplyr::mutate(tmp_from_Need_Both = dplyr::if_else(Need_Both, from, "")) |> 
+        dplyr::group_by(from_to, tmp_from_Need_Both) |> # from, to doesn't always works (cf. Need_Both)
+        ## Remove noTVC link when a TVC link is available
+        dplyr::arrange(Album_Year, dplyr::desc(Group == "TVC")) |>
+        dplyr::slice_head(n = 1L) |>
+        dplyr::ungroup() |>
+        dplyr::select(-from_to, - tmp_from_Need_Both) |> 
+        ## Add coordinates Y
+        ## full to add missing artists from "from"
+        dplyr::full_join(coords, by = dplyr::join_by(from == name)) |> 
+         # dplyr::filter(ISRC == "USUG12000137") |> 
+        dplyr::left_join(coords, by = dplyr::join_by(to == name), suffix = c("", "end")) |> 
+        ## Label et Size
+        dplyr::left_join(dplyr::distinct(byArtists, Artist, Nb_Triads,
+                                         Year_First_Artist, Date_First_Artist), # Nb_Songs
+                         by = dplyr::join_by(from == Artist)) %>%
+        dplyr::rename(size = Nb_Triads) |> 
+        ## useless
+        # dplyr::left_join(dplyr::distinct(byArtists, Artist, Year_First_Artist), # Nb_Songs
+        #                  by = dplyr::join_by(from == Artist), suffix = c("", "to")) %>%
+        # dplyr::rename(size = Nb_Triads)
+        ## New x
+        # dplyr::mutate(
+        #   x = Year_First_Artist,
+        #   xend = Album_Year
+        # ) |> 
+        dplyr::mutate(
+          x = Date_First_Artist,
+          xend = Album_Date
+        ) |> 
+        ## Adjust Yend at the meeting place
+        dplyr::group_by(ISRC, Need_Both) |> 
+        dplyr::mutate(
+          yend = if(all(Need_Both, na.rm = TRUE)) {
+            (mean(yend) + max(yend)) / 2
+          } else {
+            yend
+          }
+        ) |>
+        dplyr::ungroup() |> 
+        dplyr::rename(name = from) |> 
+        # dplyr::filter(ISRC == "USWB18200003") |>
+        # dplyr::filter(ISRC == "USUG12000137") |> View()
+        # dplyr::filter(ISRC == "USAT20003605") |> View()
+        # dplyr::filter(name %in% c("Ron Fair", "Vanessa Carlton", "Samantha Mumba", "Christina Aguilera")) |>
+        # dplyr::filter(name %in% c("Dave Mason", "Paul McCartney"), Album_Year %in% c(1965:1978)) |> # "George Harrison"
+        # dplyr::filter(name %in% c("David Foster", "Boz Scaggs") | to %in% c("David Foster", "Boz Scaggs"),
+        #               Album_Year %in% c(1977), xend == 1977) |>
+        # dplyr::filter(name %in% c("David Foster", "JJ Lin"), Album_Year %in% c(1975, 2020, 2003)) |> # "George Harrison"
+        dplyr::select(-to)
+        
+    }
+  } else {
+    fb.igra <- igraph::graph_from_data_frame(
+      d = dplyr::select(bands[["edges"]], from, to),
+      directed = FALSE
+    )
+    igraph::V(fb.igra)$conf <- bands$vertices[igraph::V(fb.igra)$name, "label"]
+    igraph::V(fb.igra)$size <- bands$vertices[igraph::V(fb.igra)$name, "size"]
+    igraph::V(fb.igra)$Year_First_Artist <- bands$vertices[igraph::V(fb.igra)$name, "Year_First_Artist"]
+    igraph::E(fb.igra)$Group <- bands$edges$Group
+    # igraph::E(fb.igra)$vehicle <- bands$edges$vehicle
+    # igraph::E(fb.igra)$ISRC <- bands$edges$ISRC
+    # igraph::E(fb.igra)$Album_Year <- bands$edges$Album_Year
+    # igraph::E(fb.igra)$Need_Both <- bands$edges$Need_Both
+    # E(fb.igra)$Admin <- bands$edges$Admin
+    # E(fb.igra)$lty=ifelse(E(fb.igra)$Admin == 1, 1, 2)
+    
+    ## Provide the underlying dataframe
+    network_data2 <- ggnetwork::ggnetwork(
       fb.igra, #input: network object
       layout = igraph::nicely()
-    ),
+    ) |> 
+      tibble::as_tibble()
+  }
+  
+  attempt::stop_if_not(nrow(dplyr::filter(network_data2, is.na(y) | is.na(x))) == 0)
+  
+  #Tips: ctrl+shift+A to reformat
+  if(timeline && !is.null(year_range)) {
+    filtered_network_data2 <- network_data2 |> 
+      dplyr::filter(
+        # dplyr::between(y, 0.3, 0.65), is.na(yend) | dplyr::between(yend, 0.3, 0.65),
+        dplyr::between(Year_First_Artist, year_range[1], year_range[2]),
+        is.na(Album_Year) | dplyr::between(Album_Year , year_range[1] - 3, year_range[2])
+      )
+    # dplyr::filter(network_data2, dplyr::between(x, 1975, 2004), is.na(xend) | xend < 2004),
+  } else {
+    filtered_network_data2 <- network_data2
+  }
+  
+  set.seed(3212019)
+  pggnetwork <- ggplot2::ggplot(
+    filtered_network_data2,
     #can pass layout parameter
     ggplot2::aes(x, y, xend = xend, yend = yend)
   ) + #mapping for edges
     ggnetwork::geom_edges(ggplot2::aes(#linetype = as.factor(Admin),
-      color = gsub(pattern = "Degr\u00e9 de la note m\u00e9diane: ", replacement = "", Group)),
+      color = Group),
       #arrow = arrow(length = unit(6, "pt"), type = "closed") #if directed
       # color = "grey50",
       data = function(x) { x[ x$Group %in% mainGroups, ]},
-      curvature = 0.2,
+      curvature = 0.1,
       alpha = 0.5
     ) +
     ggnetwork::geom_nodes(ggplot2::aes(size = size),
@@ -221,23 +548,32 @@ plot_tvc_network_artist <- function(data) {
     ggnetwork::geom_nodes(fill = "#E74C3C", #"#D64545", "#C23B22", "red",
                           color = "black",
                           size = 5, shape = 21,
-                          data = function(x) { x[ x$conf == "A Thousand Miles", ]}) +
+                          data = function(x) { x[ x$name == "Vanessa Carlton", ]}) +
     ggplot2::guides(alpha = "none") +
-    ggnetwork::geom_nodetext(ggplot2::aes(label = insert_line_breaks_adaptive(conf)), # 1st occurence only
-                             size = 2.5, nudge_y = .02)+
+    ggnetwork::geom_nodetext(
+      ggplot2::aes(
+        label = gsub("\n, ", "\n",
+                     gsub(" - ?", ", ", 
+                          insert_line_breaks_adaptive(gsub(" ?\\([0-9]+\\)", "", name))
+                     )
+        )
+      ), # 1st occurence only
+      size = 2.5, nudge_y = .02)+ # *.25
     # scale_color_brewer("Conference",
     #                    palette = "Paired") +
     ggplot2::scale_linetype_manual(values = c(2, 1)) +
     ggplot2::guides(linetype = "none",
-                    #colour = "none",
+                    colour = "none",
                     size = "none") +
-    ggplot2::labs(colour = "Degr\u00e9 de la\nnote m\u00e9diane:") +
+    ggplot2::labs(y = "") +
+    # ggplot2::labs(colour = "Degr\u00e9 de la\nnote m\u00e9diane:") +
     # ggplot2::scale_colour_discrete() +
     ggplot2::scale_colour_manual(
-      values = c("#EB5646",  # Rouge vif
+      values = c("#FCF1DD",  # Beige clair
+                 "#EB5646",  # Rouge vif
                  "#A3472A",  # Terre cuite foncee, plus rustique
                  "#A3478A",  # Terre cuite foncee, plus rustique
-                 "#FCF1DD",  # Beige clair
+                 
                  "#FCF3EE",
                  "black",
                  "#D9A066",  # Ocre dore, pour rechauffer et varier
@@ -245,15 +581,16 @@ plot_tvc_network_artist <- function(data) {
     ) +
     # ggplot2::scale_colour_brewer(palette = 2) +
     # ggplot2::scale_color_viridis_d() +
-    ggnetwork::theme_blank() +
+    # ggnetwork::theme_blank() +
     ggplot2::theme(
-      panel.background = ggplot2::element_rect(fill='transparent'), #transparent panel bg
-      plot.background = ggplot2::element_rect(fill='transparent', color=NA), #transparent plot bg
-      panel.grid.major = ggplot2::element_blank(), #remove major gridlines
+      # panel.background = ggplot2::element_rect(fill='transparent'), #transparent panel bg
+      # plot.background = ggplot2::element_rect(fill='transparent', color=NA), #transparent plot bg
+      # panel.grid.major = ggplot2::element_blank(), #remove major gridlines
       panel.grid.minor = ggplot2::element_blank(), #remove minor gridlines
       legend.background = ggplot2::element_rect(fill='transparent'), #transparent legend bg
       legend.box.background = ggplot2::element_rect(fill='transparent') #transparent legend panel
     )
+  pggnetwork
   return(pggnetwork)
 }
 ```
@@ -276,6 +613,6 @@ test_that("plot_tvc_network_artist works", {
 ```{r development-inflate, eval=FALSE}
 # Run but keep eval=FALSE to avoid infinite loop
 # Execute in the console directly
-fusen::inflate(flat_file = "dev/flat_plot_tvc_network_artist.Rmd", vignette_name = "Go further")
+fusen::inflate(flat_file = "dev/flat_plot_tvc_network_artist.Rmd", vignette_name = "Plot Artist Network", check = FALSE)
 ```
 

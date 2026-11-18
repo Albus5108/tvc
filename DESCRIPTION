@@ -10,6 +10,7 @@ Imports:
     attempt,
     cli,
     config,
+    digest,
     dplyr,
     ggnetwork,
     ggplot2,

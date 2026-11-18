@@ -104,7 +104,7 @@ test_that("auth_spotify works", {
 #' 
 #' Description
 #' 
-#' @return
+#' @return \code{query_playlist} returns a tibble with spotify playlist (Song, Artist, etc.)
 #' 
 #' @noRd
 #' @importFrom httr RETRY add_headers stop_for_status content
