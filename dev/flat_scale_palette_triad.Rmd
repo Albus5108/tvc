@@ -82,7 +82,7 @@ palette_gen_d <- function(palette = "main", direction = 1) {
   function(n) {
 
     if (n > length(tvc_corp_palette(palette))) {
-      warning("Not enough colors in this palette!")
+      stop("Not enough colors in this palette!")
     } else {
 
       all_colors <- tvc_corp_palette(palette)
@@ -95,6 +95,7 @@ palette_gen_d <- function(palette = "main", direction = 1) {
 
       color_list <- all_colors[1:n]
 
+      return(color_list)
     }
   }
 }

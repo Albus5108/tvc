@@ -103,7 +103,7 @@ test_that("compute_interval_probability works", {
 ```
   
 ```{r function-compute_triad_probability_old}
-#' Compute Triad Probability (depreciated)
+#' Compute Triad Probability (deprecated)
 #' 
 #' This first method was based on the interval probabilities but is missing finesse in the way it describes the 
 #' relationship between the two intervals of the triad.

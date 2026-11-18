@@ -24,93 +24,121 @@ export(scale_fill_tvc_d)
 export(triad_coverage)
 export(write_missing_region)
 export(write_missing_triade)
-importFrom(attempt,stop_if)
-importFrom(attempt,stop_if_any)
-importFrom(attempt,stop_if_not)
-importFrom(attempt,warn_if)
-importFrom(cli,cli_alert_danger)
-importFrom(cli,cli_alert_success)
+importFrom(attempt,
+  stop_if,
+  stop_if_any,
+  stop_if_not,
+  warn_if
+)
+importFrom(cli,
+  cli_alert_danger,
+  cli_alert_success
+)
 importFrom(config,get)
-importFrom(dplyr,anti_join)
-importFrom(dplyr,arrange)
-importFrom(dplyr,between)
-importFrom(dplyr,bind_rows)
-importFrom(dplyr,case_match)
-importFrom(dplyr,case_when)
-importFrom(dplyr,contains)
-importFrom(dplyr,desc)
-importFrom(dplyr,distinct)
-importFrom(dplyr,filter)
-importFrom(dplyr,full_join)
-importFrom(dplyr,group_by)
-importFrom(dplyr,if_else)
-importFrom(dplyr,inner_join)
-importFrom(dplyr,join_by)
-importFrom(dplyr,left_join)
-importFrom(dplyr,mutate)
-importFrom(dplyr,n)
-importFrom(dplyr,relocate)
-importFrom(dplyr,rename)
-importFrom(dplyr,rename_all)
-importFrom(dplyr,rows_upsert)
-importFrom(dplyr,select)
-importFrom(dplyr,slice)
-importFrom(dplyr,slice_head)
-importFrom(dplyr,summarise)
-importFrom(dplyr,summarise_all)
-importFrom(dplyr,ungroup)
-importFrom(ggnetwork,geom_edges)
-importFrom(ggnetwork,geom_nodes)
-importFrom(ggnetwork,geom_nodetext)
-importFrom(ggnetwork,ggnetwork)
-importFrom(ggnetwork,theme_blank)
-importFrom(ggplot2,aes)
-importFrom(ggplot2,element_blank)
-importFrom(ggplot2,element_rect)
-importFrom(ggplot2,geom_histogram)
-importFrom(ggplot2,ggplot)
-importFrom(ggplot2,guides)
-importFrom(ggplot2,labs)
-importFrom(ggplot2,scale_colour_gradientn)
-importFrom(ggplot2,scale_colour_manual)
-importFrom(ggplot2,scale_fill_gradientn)
-importFrom(ggplot2,scale_linetype_manual)
-importFrom(ggplot2,theme)
-importFrom(ggplot2,theme_bw)
+importFrom(dplyr,
+  anti_join,
+  arrange,
+  between,
+  bind_rows,
+  case_match,
+  case_when,
+  contains,
+  desc,
+  distinct,
+  filter,
+  full_join,
+  group_by,
+  if_else,
+  inner_join,
+  join_by,
+  left_join,
+  mutate,
+  n,
+  relocate,
+  rename,
+  rename_all,
+  rows_upsert,
+  select,
+  slice,
+  slice_head,
+  summarise,
+  summarise_all,
+  ungroup
+)
+importFrom(ggnetwork,
+  geom_edges,
+  geom_nodes,
+  geom_nodetext,
+  ggnetwork,
+  theme_blank
+)
+importFrom(ggplot2,
+  aes,
+  element_blank,
+  element_rect,
+  geom_histogram,
+  ggplot,
+  guides,
+  labs,
+  scale_colour_gradientn,
+  scale_colour_manual,
+  scale_fill_gradientn,
+  scale_linetype_manual,
+  theme,
+  theme_bw
+)
 importFrom(glue,glue)
-importFrom(googlesheets4,read_sheet)
-importFrom(googlesheets4,write_sheet)
-importFrom(httr,RETRY)
-importFrom(httr,add_headers)
-importFrom(httr,content)
-importFrom(httr,stop_for_status)
-importFrom(igraph,E)
-importFrom(igraph,V)
-importFrom(igraph,graph_from_data_frame)
-importFrom(igraph,nicely)
+importFrom(googlesheets4,
+  read_sheet,
+  write_sheet
+)
+importFrom(httr,
+  RETRY,
+  add_headers,
+  content,
+  stop_for_status
+)
+importFrom(igraph,
+  E,
+  V,
+  graph_from_data_frame,
+  nicely
+)
 importFrom(janitor,clean_names)
 importFrom(jpeg,readJPEG)
 importFrom(jsonlite,fromJSON)
 importFrom(magrittr,"%>%")
-importFrom(purrr,compact)
-importFrom(purrr,map)
-importFrom(purrr,map2)
-importFrom(purrr,map_lgl)
-importFrom(purrr,possibly)
-importFrom(purrr,simplify_all)
-importFrom(purrr,transpose)
-importFrom(purrr,walk2)
-importFrom(readr,parse_number)
-importFrom(readr,read_csv)
-importFrom(rvest,html_elements)
-importFrom(rvest,html_table)
-importFrom(rvest,read_html)
-importFrom(spotifyr,get_artists)
-importFrom(spotifyr,get_playlist)
-importFrom(spotifyr,get_spotify_access_token)
+importFrom(purrr,
+  compact,
+  map,
+  map2,
+  map_lgl,
+  possibly,
+  simplify_all,
+  transpose,
+  walk2
+)
+importFrom(readr,
+  parse_number,
+  read_csv
+)
+importFrom(rvest,
+  html_elements,
+  html_table,
+  read_html
+)
+importFrom(spotifyr,
+  get_artists,
+  get_playlist,
+  get_spotify_access_token
+)
 importFrom(stringr,str_remove)
-importFrom(tibble,as_tibble)
-importFrom(tibble,column_to_rownames)
-importFrom(tibble,tibble)
-importFrom(tidyr,expand_grid)
-importFrom(tidyr,unnest)
+importFrom(tibble,
+  as_tibble,
+  column_to_rownames,
+  tibble
+)
+importFrom(tidyr,
+  expand_grid,
+  unnest
+)

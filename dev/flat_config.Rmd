@@ -46,7 +46,7 @@ get_config <- function(env = "spotify", template = FALSE) {
   configFiles <- c(
     file,
     file.path("./inst", file),
-    system.file(file, package = "xAcou"),
+    system.file(file, package = "tvc"),
     file.path("../inst", file), # for vignettes
     file.path("../../inst", file), # for tests
     ## for tests inside RMD Check and test coverage

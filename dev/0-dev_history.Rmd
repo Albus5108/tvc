@@ -73,6 +73,7 @@ usethis::use_pipe()
 
 # package-level documentation
 usethis::use_package_doc()
+usethis::use_package(package = "roxygen2", type = "Suggests", min_version = "8.1.0")
 
 # GitHub
 # Add your credentials for GitHub

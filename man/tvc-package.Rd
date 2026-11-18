@@ -11,5 +11,10 @@ R functions to analyse Vanessa Carlton Triads through music history.
 \author{
 \strong{Maintainer}: Arthur Petit \email{arthur.petit5108@gmail.com}
 
+Authors:
+\itemize{
+  \item Arthur Petit \email{arthur.petit5108@gmail.com}
+}
+
 }
 \keyword{internal}
