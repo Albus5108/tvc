@@ -125,6 +125,9 @@ fusen::add_flat_template(template = "add", flat_name = "scale_palette_triad")
 fusen::add_flat_template(template = "add", flat_name = "compute_population_estimates")
 fusen::add_flat_template(template = "add", flat_name = "bias_correction_triad")
 fusen::add_flat_template(template = "add", flat_name = "triad_coverage")
+fusen::add_flat_template(template = "add", flat_name = "discogs")
+fusen::add_flat_template(template = "add", flat_name = "triad_nbda")
+fusen::add_flat_template(template = "add", flat_name = "plot_tvc_album_cover_timeline")
 
 # perspective : article md, fonction set_config, blacK/white palette, correct world population before 1950, declarer font color, plus grand utiliseur / premiers utilisateur d'une triade
 # https://nikkimiller.space/2025/02/09/how-much-music-is-released-every-year/

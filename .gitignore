@@ -56,5 +56,10 @@ service-account.json
 
 # ignore datasets
 songs.RDS
+artist_releases.RDS
+countries.RDS
+years.RDS
 inst/extdata/album_covers/
 inst/extdata/album_covers_trash/
+cmdstan_saves/
+*.RData

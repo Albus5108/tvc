@@ -32,6 +32,16 @@ token <- tvc:::auth_spotify()
 
 
 
+# query_playlist
+    
+  
+  
+```{r example-query_playlist}
+query_playlist()
+```
+
+  
+
 # GET Spotify Playlist
 
 
@@ -39,7 +49,7 @@ token <- tvc:::auth_spotify()
 playlist_id <- get_playlist_id(triad = "1 7")
 songs <- tvc:::get_spotify_api_playlist(
   playlist_id = playlist_id,
-  scope = "public"
+  scope = "private"
 )
 ```
 
