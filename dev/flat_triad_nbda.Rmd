@@ -159,16 +159,17 @@ triad_nbda <- function(
   #### Cumulative diffusion curves ####
   # we need to store num inds per trial to refer to later
   plot_data_obs <- event_data %>%
-    dplyr::group_by(trial) %>%
-    dplyr::mutate(n_trial = dplyr::n()) |> 
-    dplyr::ungroup() |> 
     dplyr::filter(time > 0, time <= t_end) %>% # exclude demonstrators (time == 0) and censored (time > t_end)
     dplyr::group_by(trial) %>%
-    dplyr::arrange(time, .by_group = TRUE) %>%
+    dplyr::arrange(time, .by_group = TRUE) |>
+    dplyr::mutate(
+      n_trial = dplyr::n()
+    ) |>
     dplyr::mutate(
       cum_prop = dplyr::row_number() / n_trial, # this denominator needs to be the number of individuals per trial
       type = "observed"
-    ) %>%
+    ) |>
+    dplyr::ungroup() |>
     dplyr::select(artist_id = id, trial, time, cum_prop, type) %>%
     dplyr::ungroup()
   
@@ -211,9 +212,12 @@ triad_nbda <- function(
     dplyr::mutate(n_trial = dplyr::n())
   
   # we also need to remove individuals predicted as censored, which
-  # have value of -1 in predicted data
+  # have value of -1 in predicted data (time > -1)
   ppc_long <- ppc_long %>%
-    dplyr::filter(time > -1)
+    dplyr::filter(
+      time > 0,
+      time <= t_end
+    )
   
   # build cumulative curves per draw
   plot_data_ppc <- ppc_long %>%
