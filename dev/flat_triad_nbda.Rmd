@@ -50,11 +50,16 @@ triad_nbda <- function(
   floating_songs,
   missing_song_credits,
   year_range = c(1973, 1985),
-  subdiv = 12
+  subdiv = 12,
+  min_tvc_songs_triadist = 5L
 ) {
   # year_range <- c(1973, 1985)
   # subdiv <- 12 # 365.25 for days; 12 for month; 1 for year
   #### Import Data ####
+  
+  ## Artists that had a long career before our first record of them
+  ## And played their first registered TVC more than 2 years after our first record of them
+  ## And would nonetheless be considered as not knowing TVC at t0
   unknown_artists <- floating_songs |> 
     dplyr::inner_join(
       dplyr::distinct(triadists, Artist, Year_First_Artist, Date_First_Artist),
@@ -94,7 +99,12 @@ triad_nbda <- function(
   # event_data <- STbayes::event_data
   event_data <- data |>
     dplyr::filter(!Artist %in% unknown_artists) |> 
-    dplyr::filter(Artist %in% dplyr::filter(dplyr::distinct(byArtists, Artist, Nb_Songs), Nb_Songs > 4)[["Artist"]]) |> 
+    dplyr::filter(
+      Artist %in% dplyr::filter(
+        dplyr::distinct(byArtists, Artist, Nb_Songs),
+        Nb_Songs >= min_tvc_songs_triadist
+      )[["Artist"]]
+    ) |> 
     # dplyr::filter(Artist == "Rita Coolidge") |> 
     dplyr::ungroup() |> 
     # dplyr::select(id = Artist, time = Year_First_Artist) |> 
@@ -121,6 +131,11 @@ triad_nbda <- function(
     dplyr::select(focal = from, other = to, time = Album_Date) |>
     dplyr::mutate(time = 1970 + as.numeric(time) / 365.25) |> 
     dplyr::mutate(time = time * subdiv) |> 
+    ## Introduce an offset of 1 subdiv
+    ## To simulate the meeting of artists
+    ## Before the actual observation of one of them (a newcomer ?)
+    ## playing a TVC on that particular collab 
+    dplyr::mutate(time = time - 1L * subdiv) |>
     dplyr::filter(time <= tend + 1) |> 
     dplyr::mutate(trial = 1,
                   time = time - t0) |> 
@@ -215,8 +230,7 @@ triad_nbda <- function(
   # have value of -1 in predicted data (time > -1)
   ppc_long <- ppc_long %>%
     dplyr::filter(
-      time > 0,
-      time <= t_end
+      time > 0
     )
   
   # build cumulative curves per draw
@@ -274,6 +288,13 @@ triad_nbda <- function(
   lout <- list(
     fit = full_fit,
     summary = summary_fit,
+    metadata = list(
+      calculation_date = Sys.Date(),
+      year_range = year_range,
+      subdiv = subdiv,
+      nb_artists = nrow(event_data),
+      min_tvc_songs_triadist = min_tvc_songs_triadist
+    ),
     cumulative_diffusion = p1,
     acquisition_times = p2
   )
@@ -282,31 +303,36 @@ triad_nbda <- function(
 ```
 
 ```{r examples-triad_nbda, eval=FALSE}
+year_range <- c(1973, 1985)
+min_tvc_songs_triadist <- 5L
 results_nbda <- triad_nbda(
   triads,
   song_credits,
   triadists,
   floating_songs,
   missing_song_credits,
-  year_range = c(1973, 1985),
-  subdiv = 12
+  year_range = year_range,
+  subdiv = 12,
+  min_tvc_songs_triadist = min_tvc_songs_triadist
 )
+
+print(results_nbda[["summary"]])
 
 STbayes::STb_save(
   results_nbda[["fit"]],
   output_dir = "cmdstan_saves",
-  name = paste0(format(Sys.Date(), "%Y%m%d"), "-triad_ndba_fit-5TVC-1975-1985")
+  name = paste0(format(Sys.Date(), "%Y%m%d"), "-triad_ndba_fit-{min_tvc_songs_triadist}TVC-", paste(year_range, collapse = "-"))
 )
 
 ggplot2::ggsave(
   plot = results_nbda[["cumulative_diffusion"]],
-  glue::glue("../{format(Sys.Date(), format = '%Y%m%d')}-cumulative-diffusion-curves-TVC-1974-1985.png"),
+  glue::glue("../{format(Sys.Date(), format = '%Y%m%d')}-cumulative-diffusion-curves-{min_tvc_songs_triadist}TVC-{paste(year_range, collapse = '-')}.png"),
   width = 29.7/2, height = 21/2
 )
 
 ggplot2::ggsave(
   plot = results_nbda[["acquisition_times"]],
-  glue::glue("../{format(Sys.Date(), format = '%Y%m%d')}-estimated-first-TVC-1974-1985.pdf"),
+  glue::glue("../{format(Sys.Date(), format = '%Y%m%d')}-estimated-first-TVC-{min_tvc_songs_triadist}TVC-{paste(year_range, collapse = '-')}.pdf"),
   width = 29.7/2, height = 21/2
 )
 ```

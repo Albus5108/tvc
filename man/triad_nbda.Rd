@@ -11,7 +11,8 @@ triad_nbda(
   floating_songs,
   missing_song_credits,
   year_range = c(1973, 1985),
-  subdiv = 12
+  subdiv = 12,
+  min_tvc_songs_triadist = 5L
 )
 }
 \arguments{
@@ -40,31 +41,36 @@ This function fits a Bayesian STbayes model
 and may require several minutes to run.
 }
 \examples{
+year_range <- c(1973, 1985)
+min_tvc_songs_triadist <- 5L
 results_nbda <- triad_nbda(
   triads,
   song_credits,
   triadists,
   floating_songs,
   missing_song_credits,
-  year_range = c(1973, 1985),
-  subdiv = 12
+  year_range = year_range,
+  subdiv = 12,
+  min_tvc_songs_triadist = min_tvc_songs_triadist
 )
+
+print(results_nbda[["summary"]])
 
 STbayes::STb_save(
   results_nbda[["fit"]],
   output_dir = "cmdstan_saves",
-  name = paste0(format(Sys.Date(), "\%Y\%m\%d"), "-triad_ndba_fit-5TVC-1975-1985")
+  name = paste0(format(Sys.Date(), "\%Y\%m\%d"), "-triad_ndba_fit-{min_tvc_songs_triadist}TVC-", paste(year_range, collapse = "-"))
 )
 
 ggplot2::ggsave(
   plot = results_nbda[["cumulative_diffusion"]],
-  glue::glue("../{format(Sys.Date(), format = '\%Y\%m\%d')}-cumulative-diffusion-curves-TVC-1974-1985.png"),
+  glue::glue("../{format(Sys.Date(), format = '\%Y\%m\%d')}-cumulative-diffusion-curves-{min_tvc_songs_triadist}TVC-{paste(year_range, collapse = '-')}.png"),
   width = 29.7/2, height = 21/2
 )
 
 ggplot2::ggsave(
   plot = results_nbda[["acquisition_times"]],
-  glue::glue("../{format(Sys.Date(), format = '\%Y\%m\%d')}-estimated-first-TVC-1974-1985.pdf"),
+  glue::glue("../{format(Sys.Date(), format = '\%Y\%m\%d')}-estimated-first-TVC-{min_tvc_songs_triadist}TVC-{paste(year_range, collapse = '-')}.pdf"),
   width = 29.7/2, height = 21/2
 )
 }
