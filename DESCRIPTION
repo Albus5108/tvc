@@ -24,12 +24,14 @@ Imports:
     jsonlite,
     lubridate,
     magrittr,
+    posterior,
     purrr,
     readr,
     rlang,
     rvest,
     scales,
     spotifyr,
+    STbayes,
     stringr,
     tibble,
     tidyr
@@ -37,11 +39,11 @@ Suggests:
     kableExtra,
     knitr,
     rmarkdown,
-    roxygen2 (>= 8.1.0),
     tabr,
     testthat
-VignetteBuilder: knitr
+VignetteBuilder: 
+    knitr
 Config/fusen/version: 0.7.2
-Config/roxygen2/version: 8.1.0
+Config/roxygen2/version: 8.1.1
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
