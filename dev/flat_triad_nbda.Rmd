@@ -74,7 +74,7 @@ triad_nbda <- function(
                      Career_Start = min(Album_Year),
                      .groups = "drop") |> 
     dplyr::arrange(dplyr::desc(Nb_Prior_Songs_Unknown)) |>
-    dplyr::filter(Nb_Prior_Songs_Unknown > 30 & Year_First_Artist - Career_Start >= 2 & Year_First_Artist >= year_range[1]) |>
+    dplyr::filter(Nb_Prior_Songs_Unknown > 40 & Year_First_Artist - Career_Start >= 2 & Year_First_Artist >= year_range[1]) |>
     dplyr::pull(name)
   
   ltmp <- build_network_artist(
