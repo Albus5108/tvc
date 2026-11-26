@@ -32,10 +32,21 @@ pkgload::load_all(export_all = FALSE)
 #' @importFrom tibble tibble
 #' @importFrom tidyr expand_grid
 estimate_population_by_country_year <- function(countries_df, years_df, clean_countries, group_year = 1) {
+  year_range <- range(
+    years_df$year,
+    clean_countries$year,
+    na.rm = TRUE
+  )
   years_df_interpolated <- tibble::tibble(
-    year = min(years_df[["year"]]):max(years_df[["year"]]),
-    world_population = approx(x = years_df[["year"]],
-                              y = years_df[["world_population"]], xout = year)$y
+    year = seq(year_range[[1L]], year_range[[2]], by = 1L),
+    world_population = approx(
+      x = years_df[["year"]],
+      y = years_df[["world_population"]],
+      xout = year,
+      ## rule = 2 means that latest known worldwide population (ex: 2025)
+      ## will be applied to 2026, 2027, etc.
+      rule = c(1L, 2L)
+    )$y
   )
   countries_df %>%
     dplyr::mutate(
